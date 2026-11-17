@@ -355,7 +355,7 @@ const telas = {
   alunos: telaAlunos, convidar: telaConvidar, aluno: telaAluno, enviar: telaEnviar, // professor.js
   admin: telaAdmin, // admin.js
   feedback: telaFeedback, // feedback.js
-  montar: telaMontar, // montar.js
+  montar: telaMontar, modelos: telaModelosProntos, // montar.js
   'excluir-conta': telaExcluirConta, // conta.js
 };
 
@@ -375,7 +375,7 @@ function render() {
     treino: 'hoje', finalizar: 'hoje', registrar: 'hoje', sessao: 'historico', exercicio: 'progresso',
     ficha: 'treinos', 'editar-ex': 'treinos', 'editar-bloco': 'treinos', 'editar-textos': 'treinos', 'editar-comp': 'treinos',
     catalogo: 'treinos', escolher: 'treinos', trocar: rotaAtual().arg === 'sessao' ? 'hoje' : 'treinos',
-    criar: 'treinos', montar: 'treinos', programa: 'treinos', importar: 'treinos', convite: 'hoje', ajustes: 'ajustes', feedback: 'ajustes', 'excluir-conta': 'ajustes',
+    criar: 'treinos', montar: 'treinos', modelos: 'treinos', programa: 'treinos', importar: 'treinos', convite: 'hoje', ajustes: 'ajustes', feedback: 'ajustes', 'excluir-conta': 'ajustes',
     mensagens: ehProfessor() ? 'alunos' : 'hoje', conversa: ehProfessor() ? 'alunos' : 'hoje',
     convidar: 'alunos', aluno: ehAdmin() && !ehProfessor() ? 'ajustes' : 'alunos', enviar: 'alunos', admin: ehProfessor() ? 'alunos' : 'ajustes', 'trocar-comp': rotaAtual().arg === 'sessao' ? 'hoje' : 'treinos',
   }[pag] || pag;
@@ -527,6 +527,26 @@ function checkItem(grupo, i, texto, on) {
     <span class="caixa">✓</span><span class="txt small">${esc(texto)}</span></div>`;
 }
 
+// Primeiro treino: dicas curtas, dentro do próprio treino (somem depois de lidas ou no segundo treino)
+const DICAS_KEY = 'meutreino:dicas-treino';
+function dicasPrimeiroTreino() {
+  try { if (localStorage.getItem(DICAS_KEY) || db.sessoes.length) return ''; } catch (e) { return ''; }
+  return `<div class="card destaque dicas-treino"><div class="linha entre"><b>Primeiro treino? 4 dicas rápidas</b>
+      <button class="btn-mini" data-acao="dicas-ok" aria-label="Fechar dicas">✕</button></div>
+    <ol class="small">
+      <li>Digite a <b>carga</b> e as <b>repetições</b> e toque na série (S1, S2…) quando terminar. O descanso começa sozinho.</li>
+      <li>Não sabe fazer? Toque em <b>Ver execução</b> para ver o vídeo do exercício.</li>
+      <li>Aparelho ocupado ou não tem? Use <b>⇄ Trocar</b> para escolher um equivalente.</li>
+      <li>No fim, toque em <b>Finalizar treino</b>. Na próxima vez, o app mostra a carga que você usou.</li>
+    </ol>
+    <button class="btn sec" data-acao="dicas-ok">Entendi</button></div>`;
+}
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('[data-acao="dicas-ok"]')) return;
+  try { localStorage.setItem(DICAS_KEY, '1'); } catch (er) { /* ok */ }
+  $('.dicas-treino')?.remove();
+});
+
 function telaTreino() {
   const a = db.ativa;
   if (!a) return `<div class="vazio"><p>Nenhum treino em andamento.</p><a class="btn" href="#/hoje">Voltar</a></div>`;
@@ -536,8 +556,9 @@ function telaTreino() {
 
   let h = `<div class="topo-treino">
     <div class="linha entre"><div><b>${esc(t.titulo)}</b> <span class="muted small">· ${esc(t.tipo)}</span></div><span class="cron" id="cron"></span></div>
-    <div class="small muted" style="margin-top:2px"><span id="contador">${feitas}/${total} séries</span></div>
+    <div class="small muted" style="margin-top:2px"><span id="contador">${total ? `${feitas}/${total} séries` : `${(t.mobilidade || []).length + (t.core || []).length + (t.preparacao || []).length} exercícios de mobilidade e alongamento`}</span></div>
     <div class="progresso-barra"><i id="barra" style="width:${(feitas / (total || 1)) * 100}%"></i></div></div>`;
+  h += dicasPrimeiroTreino();
 
   if (a.dataManual) {
     h += `<div class="card destaque small">Registro de <b>${fmtDataLonga(a.dataManual)}</b>: anote cargas e repetições que lembrar e marque ✓. Séries não marcadas não contam. Sem cronômetro nem descanso.</div>`;
@@ -601,7 +622,7 @@ function atualizarContador() {
   const a = db.ativa; if (!a) return;
   const { total, feitas } = contarSeries(fichaDe(a.treino), a.series);
   const c = $('#contador'), b = $('#barra');
-  if (c) c.textContent = `${feitas}/${total} séries`;
+  if (c && total) c.textContent = `${feitas}/${total} séries`;
   if (b) b.style.width = `${(feitas / (total || 1)) * 100}%`;
 }
 
@@ -840,7 +861,7 @@ function cartaoPerfil() {
 }
 
 // Versão publicada (mostrada em Ajustes, para conferir se o celular já carregou a atualização)
-const VERSAO_APP = '2026.11.17t';
+const VERSAO_APP = '2026.11.17u';
 async function buscarAtualizacao() {
   toast('Buscando atualização...');
   try {

@@ -70,11 +70,18 @@ function telaTreinos() {
       <p class="muted small">${esc(t.resumo)}</p>
       <div class="linha entre small"><span class="muted">${t.blocos.length} blocos · ${exerciciosDe(t).length} exercícios · ${c.total} séries</span><span class="seta">›</span></div></a>`;
   }
-  const outros = (db.programas || []).filter((x) => x.id !== p?.id && !x.paraAluno);
+  const outros = (db.programas || []).filter((x) => x.id !== p?.id && !x.paraAluno && !x.modelo);
+  const modelos = (db.programas || []).filter((x) => x.modelo);
   const deAlunos = (db.programas || []).filter((x) => x.paraAluno);
   if (outros.length) {
     h += `<h3>Outros programas</h3><div class="card">${outros.map((x) => `<a class="item" href="#/programa/${x.id}">
       <div class="cresce"><b>${esc(x.nome)}</b><div class="muted small">${x.ordem.length} fichas · ${esc(progressoPrograma(x).texto)}</div></div><span class="seta">›</span></a>`).join('')}</div>`;
+  }
+  if (typeof ehProfessor === 'function' && ehProfessor()) {
+    h += `<h3>Meus modelos para alunos</h3><div class="card">${modelos.map((x) => `<a class="item" href="#/programa/${x.id}">
+      <div class="cresce"><b>${esc(x.nome)}</b><div class="muted small">${x.ordem.length} fichas · toque para editar ou enviar</div></div><span class="seta">›</span></a>`).join('')
+      || '<p class="muted small" style="margin:0">Monte programas-modelo (ex.: "Iniciante 3x", "Hipertrofia ABC") e envie para vários alunos de uma vez.</p>'}
+      <button class="btn sec" data-acao="prof-novo-modelo" style="margin-top:8px">+ Novo modelo para alunos</button></div>`;
   }
   if (deAlunos.length) {
     h += `<h3>Programas para alunos</h3><div class="card">${deAlunos.map((x) => `<a class="item" href="#/programa/${x.id}">

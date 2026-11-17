@@ -6,6 +6,7 @@
 
 const prof = { alunos: null, convites: [], carregando: false, usuarios: {} };
 let criandoParaAluno = null; // programa novo criado a partir da tela do aluno (gerador.js / programas.js)
+let criandoModelo = false; // personal criando um modelo para enviar a vários alunos
 
 // Roda uma tela do app com os dados de outro usuário, sem gravar nada
 function comDadosDe(dados, fn) {
@@ -104,7 +105,7 @@ function telaAlunos() {
 window.addEventListener('hashchange', () => {
   const pag = rotaAtual().pag;
   if (pag === 'alunos') prof.alunos = null;
-  if (!['criar', 'importar', 'catalogo', 'montar'].includes(pag)) criandoParaAluno = null;
+  if (!['criar', 'importar', 'catalogo', 'montar', 'modelos'].includes(pag)) { criandoParaAluno = null; criandoModelo = false; }
 });
 
 // ---------- Convidar ----------
@@ -204,27 +205,38 @@ function telaEnviar(progId, args) {
   if (!prof.alunos && !prof.carregando) carregarAlunos();
   if (!prof.alunos) return '<div class="vazio">Carregando alunos...</div>';
   const pre = args[1] || p.paraAluno;
+  const varios = !p.substitui; // substituir o programa de um aluno é sempre para aquele aluno
   return `<a href="#/programa/${p.id}" class="small">‹ ${esc(p.nome)}</a><h1>Enviar programa</h1>
     <p class="muted small">${esc(p.nome)} · ${p.ordem.length} fichas · ${esc(descreverPeriodo(p.periodicidade))}</p>
     ${prof.alunos.length ? `<div class="card form">
-      <label>Para<select id="env-aluno">${prof.alunos.map((u) => `<option value="${u.id}" ${u.id === pre ? 'selected' : ''}>${esc(nomeDe(u.id))}</option>`).join('')}</select></label>
-      <label>Mensagem para o aluno (opcional)<textarea id="env-msg" rows="3" placeholder="ex.: Novo treino para as próximas 8 semanas. Qualquer dor, me avise."></textarea></label>
+      <div><b class="small">Para ${varios ? '(marque um ou mais alunos)' : ''}</b>
+        <div class="lista-alunos-envio">${prof.alunos.filter((u) => varios || u.id === pre).map((u) => `<label class="linha" style="gap:8px;padding:8px 0;border-top:1px solid var(--line)">
+          <input type="checkbox" class="env-aluno" value="${u.id}" ${u.id === pre || (!varios) ? 'checked' : ''}> <span>${esc(nomeDe(u.id))}</span></label>`).join('')}</div>
+        ${varios && prof.alunos.length > 1 ? '<button class="link-btn small" data-acao="prof-marcar-todos">Marcar todos</button>' : ''}</div>
+      <label>Mensagem para os alunos (opcional)<textarea id="env-msg" rows="3" placeholder="ex.: Novo treino para as próximas 8 semanas. Qualquer dor, me avise."></textarea></label>
       ${p.substitui ? '<p class="small muted" style="margin:0">Este programa substitui o programa atual do aluno, mantendo o histórico.</p>' : ''}
+      <p class="small muted" style="margin:0">Cada aluno recebe uma cópia. Depois você pode ajustar o programa de cada um na tela do aluno.</p>
       <button class="btn" data-acao="prof-enviar" data-id="${p.id}">Enviar</button></div>`
       : '<div class="card small">Você ainda não tem alunos vinculados. Convide um aluno primeiro.</div>'}`;
 }
-
 async function enviarPrograma(progId) {
-  const p = programaPorId(progId), alunoId = $('#env-aluno').value, msg = $('#env-msg').value.trim();
-  const programa = structuredClone(p);
-  programa.id = p.substitui || `prog-${uid()}`; // novo id para não sobrepor um programa do próprio aluno
-  delete programa.paraAluno; delete programa.substitui;
-  programa.criadoEm = isoDia();
-  const { error } = await sb.from('prescricoes').insert({ professor_id: contaAtual.id, aluno_id: alunoId, programa, mensagem: msg || null });
-  if (error) return toast('Não foi possível enviar. Confira se o aluno ainda está vinculado.');
-  await enviarMensagem(alunoId, `📋 Enviei um novo programa: ${p.nome}${msg ? `\n${msg}` : ''}`);
-  toast(`Programa enviado para ${nomeDe(alunoId)}`);
-  location.hash = `#/aluno/${alunoId}`;
+  const p = programaPorId(progId), msg = $('#env-msg').value.trim();
+  const alunos = [...document.querySelectorAll('.env-aluno:checked')].map((x) => x.value);
+  if (!alunos.length) return toast('Marque pelo menos um aluno');
+  let ok = 0;
+  for (const alunoId of alunos) {
+    const programa = structuredClone(p);
+    programa.id = p.substitui || `prog-${uid()}`; // novo id para não sobrepor um programa do próprio aluno
+    delete programa.paraAluno; delete programa.substitui; delete programa.modelo;
+    programa.criadoEm = isoDia();
+    const { error } = await sb.from('prescricoes').insert({ professor_id: contaAtual.id, aluno_id: alunoId, programa, mensagem: msg || null });
+    if (error) { toast(`Não foi possível enviar para ${nomeDe(alunoId)}`); continue; }
+    await enviarMensagem(alunoId, `📋 Enviei um novo programa: ${p.nome}${msg ? `\n${msg}` : ''}`);
+    ok++;
+  }
+  if (!ok) return;
+  toast(ok === 1 ? `Programa enviado para ${nomeDe(alunos[0])}` : `Programa enviado para ${ok} alunos`);
+  location.hash = alunos.length === 1 ? `#/aluno/${alunos[0]}` : '#/alunos';
 }
 
 // ---------- Eventos ----------
@@ -232,6 +244,7 @@ document.addEventListener('click', async (e) => {
   const el = e.target.closest('[data-acao]');
   if (!el || !el.dataset.acao.startsWith('prof-')) return;
   const acao = el.dataset.acao;
+  if (acao === 'prof-novo-modelo') { criandoModelo = true; criandoParaAluno = null; assist.passo = 0; location.hash = '#/criar'; return; }
   if (acao === 'prof-convidar-email') {
     const nome = $('#cv-nome').value.trim(), email = normEmail($('#cv-email').value);
     if (!nome) return toast('Informe o nome do aluno');
@@ -258,7 +271,8 @@ document.addEventListener('click', async (e) => {
     if (error) return toast('Não foi possível criar o convite');
     await compartilharConvite(codigo, nome);
     location.hash = '#/alunos';
-  } else if (acao === 'prof-compartilhar') compartilharConvite(el.dataset.codigo, el.dataset.nome);
+  } else if (acao === 'prof-marcar-todos') { document.querySelectorAll('.env-aluno').forEach((x) => { x.checked = true; }); }
+  else if (acao === 'prof-compartilhar') compartilharConvite(el.dataset.codigo, el.dataset.nome);
   else if (acao === 'prof-cancelar-convite') {
     if (!confirm('Cancelar este convite? O link deixa de funcionar.')) return;
     await sb.from('convites').delete().eq('codigo', el.dataset.codigo);

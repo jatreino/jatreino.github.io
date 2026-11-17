@@ -440,3 +440,10 @@ input[type="date"].input-texto::-webkit-calendar-picker-indicator { margin-left:
 .ex-montar-acoes .btn-mini:disabled { opacity: .35; }
 .input-mini { width: 44px; text-align: center; font: inherit; font-size: 15px; padding: 4px; border: 1px solid var(--line); border-radius: 8px; background: var(--card2); color: var(--text); }
 .btn:disabled { opacity: .5; }
+.contador-fichas { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+.contador-fichas b { font-size: 22px; min-width: 28px; text-align: center; }
+.contador-fichas .btn-mini { font-size: 20px; padding: 6px 16px; }
+.contador-fichas .btn-mini:disabled { opacity: .35; }
+.dicas-treino ol { margin: 8px 0 10px; padding-left: 20px; }
+.dicas-treino li { margin: 5px 0; }
+.segmento-mini a { padding: 6px; font-size: 14px; }

@@ -104,6 +104,10 @@ function progressoPrograma(p) {
 
 // ---------- Criar, ativar, renovar ----------
 function adicionarPrograma(p) {
+  if (typeof criandoModelo !== 'undefined' && criandoModelo) { // personal: modelo para vários alunos (não vira o programa dele)
+    p.modelo = true; criandoModelo = false;
+    db.programas.push(p); programaEmEdicao = p.id; salvar(); return;
+  }
   if (typeof criandoParaAluno !== 'undefined' && criandoParaAluno) { // professor criando para um aluno
     p.paraAluno = criandoParaAluno; criandoParaAluno = null;
     db.programas.push(p); programaEmEdicao = p.id; salvar(); return;

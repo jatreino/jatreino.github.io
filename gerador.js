@@ -54,7 +54,7 @@ function respostasPadrao() {
     periodoTipo: 'semanas', periodoValor: 8, nome: '',
   };
 }
-const assist = { passo: 0, r: respostasPadrao() };
+const assist = { passo: 0, r: respostasPadrao(), avancado: false };
 
 function divisaoEfetiva(r) {
   if (r.divisao !== 'auto') return r.divisao;
@@ -244,7 +244,7 @@ function nomeSugerido(r) {
 }
 
 // ---------- Telas do assistente ----------
-const PASSOS = [
+const PASSOS_TODOS = [
   { titulo: 'Qual é o seu objetivo principal?', html: (r) => opcoesUnicas('objetivo', OBJETIVOS.map(([v, t]) => [v, t]), r.objetivo) },
   { titulo: 'Qual é a sua experiência com musculação?', html: (r) => opcoesUnicas('nivel', NIVEIS, r.nivel) },
   { titulo: 'Quantos dias por semana e quanto tempo por treino?', html: (r) => `
@@ -266,15 +266,29 @@ const PASSOS = [
   { titulo: 'Por quanto tempo vai seguir este programa?', html: (r) => `${opcoesUnicas('periodoTipo', TIPOS_PERIODO, r.periodoTipo)}
       ${r.periodoTipo === 'livre' ? '' : `<label class="form" style="margin-top:12px">Quantidade<input class="input-texto" inputmode="numeric" data-cr-num="periodoValor" value="${r.periodoValor}"></label>
       <p class="small muted">Ex.: 24 sessões, ou 8 semanas. No fim, o app avisa que é hora de trocar o treino.</p>`}` },
-  { titulo: 'Pronto! Como quer montar as fichas?', html: (r) => `
+  { titulo: 'Pronto! Confira e gere o seu treino', html: (r) => `
       <label class="form">Nome do programa<input class="input-texto" data-cr-texto="nome" value="${esc(r.nome || nomeSugerido(r))}"></label>
       <div class="card small" style="margin-top:12px">${esc(DIVISOES.find(([v]) => v === divisaoEfetiva(r))[1])} · ${planoDeFichas(r).length} fichas
         (${planoDeFichas(r).map((x) => `${x.id} ${MODELOS[x.modelo].rotulo}`).join(', ')}) · ${r.minutos} min · ${esc(MODALIDADES.find(([v]) => v === r.modalidade)[1])}</div>
-      <button class="btn" data-acao="cr-gerar">Gerar automaticamente</button>
+      <button class="btn" data-acao="cr-gerar">Gerar meu treino</button>
       <p class="small muted">O app escolhe os exercícios; você revisa e ajusta antes de começar.</p>
-      <button class="btn sec" data-acao="cr-manual">Montar eu mesmo pelo catálogo</button>
-      <p class="small muted">O app cria as fichas vazias com as suas escolhas; você adiciona os exercícios.</p>` },
+      ${assist.avancado ? '' : `<button class="btn sec" data-acao="cr-avancado">Personalizar mais</button>
+      <p class="small muted">Divisão dos treinos, séries ou circuito, cardio, equipamentos, exercícios preferidos, aquecimento e duração do programa.</p>`}` },
 ];
+// Assistente curto: 3 perguntas essenciais e o resumo. "Personalizar mais" acrescenta os demais passos.
+const P_ = (inicio) => PASSOS_TODOS.find((p) => p.titulo.startsWith(inicio));
+const PASSOS_ESSENCIAIS = [
+  { titulo: 'Qual é o seu objetivo?', html: (r) => `${opcoesUnicas('objetivo', OBJETIVOS.map(([v, t]) => [v, t]), r.objetivo)}
+      <p class="small muted" style="margin-top:14px">Sua experiência com musculação</p>${opcoesUnicas('nivel', NIVEIS, r.nivel)}` },
+  P_('Quantos dias'),
+  { titulo: 'Onde você vai treinar?', html: (r) => `${opcoesUnicas('local', LOCAIS.map(([v, t]) => [v, t]), r.local)}
+      <p class="small muted" style="margin-top:14px">Tem alguma dor ou limitação? <span class="muted">(opcional)</span></p>${opcoesMultiplas('limitacoes', LIMITACOES, r.limitacoes)}
+      <p class="small muted" style="margin-top:8px">Os exercícios de mais risco para a região marcada ficam de fora. Em caso de dor, procure um profissional.</p>` },
+];
+const PASSOS_AVANCADOS = ['Como prefere dividir', 'Como prefere executar', 'Cardio', 'Onde você vai treinar', 'Exercícios que você', 'Incluir no treino', 'Por quanto tempo'].map(P_)
+  .map((p) => (p.titulo.startsWith('Onde') ? { ...p, titulo: 'Equipamentos disponíveis' } : p));
+const PASSO_FINAL = P_('Pronto!');
+const passosAtuais = () => [...PASSOS_ESSENCIAIS, ...(assist.avancado ? PASSOS_AVANCADOS : []), PASSO_FINAL];
 
 function opcoesUnicas(campo, opcoes, atual, compacto = false) {
   return `<div class="${compacto ? 'opcoes' : 'escolhas'}">${opcoes.map(([v, t, d]) => `<button class="${String(v) === String(atual) ? 'sel' : ''}"
@@ -304,11 +318,12 @@ function telaPreferencias(r) {
 function telaCriar() {
   if (assist.passo === 0) {
     return `${criandoParaAluno ? `<a href="#/aluno/${criandoParaAluno}" class="small">‹ ${esc(nomeDe(criandoParaAluno))}</a>` : '<a href="#/treinos" class="small">‹ Treinos</a>'}<h1>Novo programa</h1>
-      <p class="muted small">${criandoParaAluno ? `Programa para <b>${esc(nomeDe(criandoParaAluno))}</b>. Ele só recebe quando você tocar em Enviar.` : 'Escolha como quer criar o seu treino.'}</p>
+      <p class="muted small">${criandoParaAluno ? `Programa para <b>${esc(nomeDe(criandoParaAluno))}</b>. Ele só recebe quando você tocar em Enviar.`
+        : criandoModelo ? '<b>Modelo para alunos</b>: monte uma vez e envie para quantos alunos quiser, ajustando cada um se precisar.' : 'Escolha como quer criar o seu treino.'}</p>
       ${opcoesNovoPrograma()}
       ${ehAdmin() ? '<button class="escolha-grande" data-acao="cr-modelo"><b>Usar o modelo AB</b><span>Modelo de referência do administrador: 6 fichas em circuito, com vídeos.</span></button>' : ''}`;
   }
-  const i = assist.passo - 1, passo = PASSOS[i];
+  const PASSOS = passosAtuais(), i = assist.passo - 1, passo = PASSOS[i];
   return `<div class="linha entre"><button class="link-btn" style="width:auto;padding:0" data-acao="cr-voltar">‹ Voltar</button>
       <span class="small muted">${i + 1} de ${PASSOS.length}</span></div>
     <div class="progresso-barra"><i style="width:${((i + 1) / PASSOS.length) * 100}%"></i></div>
@@ -323,14 +338,16 @@ function opcoesNovoPrograma() {
       <span>Responda poucas perguntas (objetivo, dias, equipamentos) e o app monta tudo para você.</span></span></button>
     <a class="escolha-grande com-icone" href="#/montar"><i aria-hidden="true">🧩</i><span><b>Criar sozinho</b>
       <span>Escolha os treinos, os dias e os exercícios do catálogo, do seu jeito. Sem questionário.</span></span></a>
+    <a class="escolha-grande com-icone" href="#/modelos"><i aria-hidden="true">📚</i><span><b>Começar de um modelo pronto</b>
+      <span>Iniciante, AB, ABC, em casa, core e mobilidade… Escolha um e ajuste do seu jeito.</span></span></a>
     <a class="escolha-grande com-icone" href="#/importar"><i aria-hidden="true">📄</i><span><b>Importar um treino pronto</b>
       <span>Tem a ficha em PDF (ou em texto)? O app reconhece os exercícios.</span></span></a>`;
 }
 
 function criarEAbrir(p) {
-  if (!criandoParaAluno && !podeTrocarPrograma()) return;
+  if (!criandoParaAluno && !criandoModelo && !podeTrocarPrograma()) return;
   adicionarPrograma(p);
-  assist.passo = 0; assist.r = respostasPadrao();
+  assist.passo = 0; assist.r = respostasPadrao(); assist.avancado = false;
   toast(`Programa criado: ${p.nome}`);
   location.hash = `#/programa/${p.id}`;
 }
@@ -339,10 +356,11 @@ document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-acao]');
   if (!el || !el.dataset.acao.startsWith('cr-')) return;
   const acao = el.dataset.acao, r = assist.r;
-  if (acao === 'cr-iniciar') { assist.passo = 1; if (location.hash !== '#/criar') location.hash = '#/criar'; else render(); }
+  if (acao === 'cr-avancado') { assist.avancado = true; assist.passo = PASSOS_ESSENCIAIS.length + 1; window.scrollTo(0, 0); render(); }
+  else if (acao === 'cr-iniciar') { assist.passo = 1; if (location.hash !== '#/criar') location.hash = '#/criar'; else render(); }
   else if (acao === 'cr-voltar') { assist.passo = Math.max(0, assist.passo - 1); render(); }
   else if (acao === 'cr-avancar') {
-    if (PASSOS[assist.passo - 1].titulo.startsWith('Onde') && !r.equip.length) return toast('Marque pelo menos um equipamento');
+    if (passosAtuais()[assist.passo - 1].titulo.startsWith('Equipamentos') && !r.equip.length) return toast('Marque pelo menos um equipamento');
     if (r.periodoTipo !== 'livre' && !(r.periodoValor >= 1)) return toast('Informe a duração do programa');
     assist.passo++; window.scrollTo(0, 0); render();
   } else if (acao === 'cr-op') {

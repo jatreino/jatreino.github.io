@@ -13,6 +13,7 @@ const ITERACOES = 150000;
 const DEMO = { id: 'demo', login: 'admin', senha: 'admin', nome: 'Demonstração' };
 
 let modoLogin = 'entrar'; // 'entrar' | 'criar' | 'redefinir' | 'nova-senha'
+let boasVindas = false; // chegou pelo convite enviado pelo administrador: cria a primeira senha
 let avisoLogin = '';      // mensagem de sucesso mostrada na tela de login (ex.: "enviamos o e-mail")
 
 // ---------- Contas locais (demonstração e contas antigas) ----------
@@ -56,7 +57,8 @@ async function contaDemo() {
 // Chamado uma vez ao abrir o app (app.js), antes da primeira tela
 async function iniciarSessao() {
   if (localStorage.getItem(SESSAO_KEY) === DEMO.id) { abrirConta(await contaDemo()); return; }
-  const recuperacao = /type=recovery/.test(HASH_INICIAL);
+  const recuperacao = /type=(recovery|invite)/.test(HASH_INICIAL);
+  boasVindas = /type=invite/.test(HASH_INICIAL);
   const veioDeLink = /access_token=/.test(HASH_INICIAL);
   let sessao = null, falhou = false;
   try {
@@ -120,7 +122,7 @@ function traduzErro(error) {
 function telaLogin() {
   const subtitulo = {
     entrar: 'Entre para acessar seus treinos', criar: 'Crie sua conta',
-    redefinir: 'Redefina a sua senha', 'nova-senha': 'Escolha a nova senha',
+    redefinir: 'Redefina a sua senha', 'nova-senha': boasVindas ? 'Bem-vindo! Crie a sua senha para começar' : 'Escolha a nova senha',
   }[modoLogin];
   const topo = `<div class="login-topo"><h1 class="login-marca"><img src="marca/logotipo_horizontal.svg" alt="Já treinô?" class="login-logo"></h1>
     <p class="muted small">${subtitulo}</p></div>`;
@@ -132,8 +134,8 @@ function telaLogin() {
   if (modoLogin === 'nova-senha') {
     return `<div class="login">${botaoTemaLogin()}${topo}
       <form class="card form" data-form="nova-senha">
-        <label>Nova senha (mínimo 6 caracteres)<input class="input-texto" type="password" name="senha" autocomplete="new-password" required></label>
-        <label>Confirme a nova senha<input class="input-texto" type="password" name="senha2" autocomplete="new-password" required></label>
+        <label>${boasVindas ? 'Senha' : 'Nova senha'} (mínimo 6 caracteres)<input class="input-texto" type="password" name="senha" autocomplete="new-password" required></label>
+        <label>Confirme a ${boasVindas ? '' : 'nova '}senha<input class="input-texto" type="password" name="senha2" autocomplete="new-password" required></label>
         ${erro}<button class="btn" type="submit">Salvar e entrar</button>
       </form></div>`;
   }
@@ -231,7 +233,8 @@ async function enviarNovaSenha(form) {
   const { data, error } = await sb.auth.updateUser({ password: senha });
   pronto();
   if (error) return erroLogin(traduzErro(error));
-  toast('Senha alterada');
+  toast(boasVindas ? 'Senha criada. Bem-vindo ao Já treinô?!' : 'Senha alterada');
+  boasVindas = false;
   entrarServidor(data.user);
   irParaApp();
 }

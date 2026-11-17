@@ -3,7 +3,7 @@
 // Administração (somente papel 'admin'): usuários, pedidos de professor, papéis e números gerais.
 // As regras do servidor (supabase-perfis.sql) deixam o administrador ler perfis, vínculos e dados_app de todos.
 
-const adm = { carregando: false, perfis: null, vinculos: [], dados: {}, filtro: '' };
+const adm = { carregando: false, perfis: null, vinculos: [], dados: {}, filtro: '', formAberto: false };
 
 async function carregarAdmin() {
   adm.carregando = true;
@@ -53,6 +53,17 @@ function telaAdmin() {
       <div class="stat"><b>${treinosSemana}</b><span>treinos em 7 dias</span></div>
       <div class="stat"><b>${contar('admin')}</b><span>administradores</span></div>
     </div>`;
+  const profs = adm.perfis.filter((p) => ['professor', 'admin'].includes(p.papel));
+  h += `<details class="card" ${adm.formAberto ? 'open' : ''} id="adm-novo"><summary class="linha entre"><b>+ Novo usuário</b><span class="seta">▾</span></summary>
+    <div class="form">
+      <label>Nome<input class="input-texto" id="nu-nome" autocomplete="off"></label>
+      <label>E-mail<input class="input-texto" type="email" id="nu-email" autocapitalize="none" autocomplete="off"></label>
+      <label>Papel<select id="nu-papel"><option value="aluno">Aluno</option><option value="professor">Professor</option></select></label>
+      <label>Professor que vai acompanhar (opcional)<select id="nu-prof"><option value="">Nenhum</option>
+        ${profs.map((p) => `<option value="${p.user_id}">${esc(p.nome || p.email)}</option>`).join('')}</select></label>
+      <button class="btn" data-acao="adm-criar">Criar e enviar convite</button>
+      <p class="muted small" style="margin:0">A pessoa recebe um e-mail com o link para entrar no app e criar a própria senha.</p>
+    </div></details>`;
   if (pedidos.length) {
     h += `<h3>Pedidos para ser professor</h3><div class="card">${pedidos.map((p) => `<div class="linha entre small" style="padding:8px 0;border-top:1px solid var(--line)">
       <span><b>${esc(p.nome || '(sem nome)')}</b><br><span class="muted">${esc(p.email || '')}${p.cref ? ` · CREF ${esc(p.cref)}` : ''}</span></span>
@@ -85,10 +96,35 @@ async function mudarPapel(id, papel, extra = {}) {
   return true;
 }
 
+// Chama a função do servidor (supabase/functions/admin-usuarios), que guarda a chave secreta
+async function criarUsuario(botao) {
+  const dados = {
+    nome: $('#nu-nome').value.trim(), email: normEmail($('#nu-email').value),
+    papel: $('#nu-papel').value, professor_id: $('#nu-prof').value || null, redirect_to: URL_APP,
+  };
+  if (!dados.nome) return toast('Informe o nome');
+  if (!emailValido(dados.email)) return toast('Informe um e-mail válido');
+  if (dados.papel === 'professor') dados.professor_id = null;
+  botao.disabled = true; botao.textContent = 'Enviando convite...';
+  let msg = null;
+  try {
+    const { data, error } = await sb.functions.invoke('admin-usuarios', { body: dados });
+    if (error) {
+      try { msg = (await error.context.json()).erro; } catch (e) { /* resposta sem corpo */ }
+      msg ||= /Failed to send|fetch|404/i.test(error.message || '') ? 'A função admin-usuarios ainda não foi instalada no Supabase.' : 'Não foi possível criar o usuário.';
+    } else if (!data?.ok) msg = data?.erro || 'Não foi possível criar o usuário.';
+  } catch (e) { msg = 'Sem conexão com o servidor.'; }
+  botao.disabled = false; botao.textContent = 'Criar e enviar convite';
+  if (msg) return toast(msg);
+  toast(`Convite enviado para ${dados.email}`);
+  adm.formAberto = false; adm.perfis = null; render();
+}
+
 document.addEventListener('click', async (e) => {
   const el = e.target.closest('[data-acao]');
   if (!el || !el.dataset.acao.startsWith('adm-')) return;
   const id = el.dataset.id;
+  if (el.dataset.acao === 'adm-criar') { adm.formAberto = true; return criarUsuario(el); }
   if (el.dataset.acao === 'adm-aprovar') { if (await mudarPapel(id, 'professor')) { toast(`${nomeDe(id)} agora é professor`); render(); } }
   else if (el.dataset.acao === 'adm-recusar') {
     const { error } = await sb.from('perfis').update({ pedido_professor: false }).eq('user_id', id);

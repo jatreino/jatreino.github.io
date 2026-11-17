@@ -1,8 +1,9 @@
 // Guarda o app no celular para funcionar sem internet.
 // Ao publicar uma nova versão, aumente o número abaixo.
-const VERSAO = 'meutreino-v14';
+const VERSAO = 'meutreino-v15';
 const ARQUIVOS = ['./', 'index.html', 'styles.css', 'app.js', 'treinos.js', 'catalogo.js', 'programas.js', 'gerador.js', 'importar.js', 'editor.js', 'relatorios.js', 'servidor.js', 'social.js', 'professor.js', 'admin.js', 'auth.js', 'vendor/supabase-2.118.0.js', 'manifest.webmanifest',
-  'icons/icon-180.png', 'icons/logo.png', 'icons/icon-192.png', 'icons/icon-512.png'];
+  'marca/app-icon-180.png', 'marca/app-icon-192.png', 'marca/app-icon-512.png', 'marca/app-icon-maskable-512.png', 'marca/app-icon-32.png',
+  'marca/favicon.svg', 'marca/logotipo_horizontal.svg', 'vendor/inter-5.3.0/inter-latin-wght-normal.woff2'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(VERSAO).then((c) => c.addAll(ARQUIVOS)).then(() => self.skipWaiting()));

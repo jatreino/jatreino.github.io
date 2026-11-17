@@ -122,7 +122,7 @@ function telaLogin() {
     entrar: 'Entre para acessar seus treinos', criar: 'Crie sua conta',
     redefinir: 'Redefina a sua senha', 'nova-senha': 'Escolha a nova senha',
   }[modoLogin];
-  const topo = `<div class="login-topo"><h1 class="login-marca"><img src="icons/logo.png" alt="Já treinô?" class="login-logo"></h1>
+  const topo = `<div class="login-topo"><h1 class="login-marca"><img src="marca/logotipo_horizontal.svg" alt="Já treinô?" class="login-logo"></h1>
     <p class="muted small">${subtitulo}</p></div>`;
   const erro = '<p class="login-erro small" id="login-erro" hidden></p>';
   const aviso = (avisoLogin ? `<div class="card destaque small">${esc(avisoLogin)}</div>` : '')

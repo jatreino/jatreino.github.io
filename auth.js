@@ -100,6 +100,7 @@ async function sair() {
   localStorage.removeItem(SESSAO_KEY);
   contaAtual = null;
   db = novoDb();
+  bio.lista = null;
   meuPerfil = null; social.disponivel = false; social.naoLidas = 0; social.prescricoes = []; social.professores = [];
   if (typeof prof !== 'undefined') { prof.alunos = null; prof.usuarios = {}; }
   modoLogin = 'entrar';
@@ -164,6 +165,7 @@ function telaLogin() {
       <label>Senha<div class="linha"><input class="input-texto cresce" type="password" name="senha" autocomplete="current-password" required>
         <button type="button" class="btn-mini" data-acao="ver-senha" aria-label="Mostrar senha">👁</button></div></label>
       ${erro}<button class="btn" type="submit">Entrar</button>
+      ${botaoBiometriaLogin()}
       <button type="button" class="link-btn" data-acao="login-modo" data-modo="redefinir">Esqueci minha senha</button>
     </form>
     <div class="card small">Ainda não tem conta?

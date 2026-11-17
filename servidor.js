@@ -14,7 +14,7 @@ const HASH_INICIAL = location.hash;
 const URL_APP = location.origin + location.pathname;
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE, {
-  auth: { flowType: 'implicit', detectSessionInUrl: true, persistSession: true, autoRefreshToken: true },
+  auth: { flowType: 'implicit', detectSessionInUrl: true, persistSession: true, autoRefreshToken: true, experimental: { passkey: true } },
 });
 
 // Usuário da última sessão, para abrir o app offline mesmo se o token expirou sem internet

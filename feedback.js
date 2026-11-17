@@ -41,7 +41,7 @@ function telaFeedback() {
   h += `<div class="card form">
     <div class="opcoes">${TIPOS_FB.map(([v, t]) => `<button data-acao="fb-tipo" data-tipo="${v}" class="${fb.tipo === v ? 'sel' : ''}" aria-pressed="${fb.tipo === v}">${t}</button>`).join('')}</div>
     <label>${fb.tipo === 'problema' ? 'O que aconteceu? (o que você fez e o que apareceu)' : fb.tipo === 'sugestao' ? 'Qual a sua sugestão?' : 'Seu comentário'}
-      <textarea id="fb-texto" rows="6" maxlength="4000" placeholder="${fb.tipo === 'problema' ? 'ex.: Toquei em Finalizar treino e a tela ficou branca.' : ''}"></textarea></label>
+      <textarea id="fb-texto" rows="6" maxlength="4000" placeholder="${fb.tipo === 'problema' ? 'ex.: Toquei em Finalizar treino e a tela ficou branca.' : ''}">${esc(fb.textoInicial || '')}</textarea></label>
     <button class="btn" data-acao="fb-enviar">Enviar</button>
     <p class="muted small" style="margin:0">Vai junto, para ajudar a encontrar o problema: versão do app (${VERSAO_APP}), tipo de aparelho e a tela de onde você veio.</p>
   </div>`;
@@ -67,7 +67,7 @@ async function enviarFeedback(botao) {
     return toast(/42P01|does not exist|schema cache/i.test(m) ? 'O envio de comentários ainda não foi ativado no servidor.'
       : /fetch|network|Failed/i.test(m) ? 'Sem conexão. Tente de novo quando estiver com internet.' : 'Não foi possível enviar. Tente de novo.');
   }
-  campo.value = '';
+  campo.value = ''; fb.textoInicial = '';
   toast('Obrigado! Sua mensagem foi enviada.');
   location.hash = `#/${fb.origem || 'hoje'}`;
 }

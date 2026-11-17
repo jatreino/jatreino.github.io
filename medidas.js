@@ -103,6 +103,9 @@ function cartaoMedidas() {
   h += `<details class="med-form" ${med.aberto || med.pre || !lista.length ? 'open' : ''}><summary class="linha entre"><b>${lista.length ? '+ Registrar novas medidas' : 'Registrar medidas'}</b><span class="seta">▾</span></summary>
     <div class="form">
       <label class="btn sec">${med.lendo ? 'Lendo o PDF...' : '📄 Importar de um PDF'}<input type="file" accept="application/pdf,.pdf" id="med-pdf" hidden ${med.lendo ? 'disabled' : ''}></label>
+      ${med.erroPdf ? `<div class="card small" style="margin:0;border-color:var(--danger)"><b>${esc(med.erroPdf)}</b>
+        <p class="muted" style="margin:6px 0">Detalhe técnico: ${esc(med.erroDetalhe || '')}</p>
+        <a href="#/feedback" class="small" data-acao="med-relatar">Enviar este erro para a equipe</a></div>` : ''}
       ${med.pre ? `<div class="card destaque small" style="margin:0">Encontramos <b>${qtdPre} ${qtdPre === 1 ? 'valor' : 'valores'}</b> no PDF (destacados abaixo).
         Confira com o documento, corrija se precisar e toque em <b>Salvar medidas</b>.${pre.altura ? `<br>Altura no PDF: ${fmtMed(pre.altura)} cm${db.perfil.altura ? '' : ' (será salva em Meus dados)'}.` : ''}
         <button class="link-btn small" data-acao="med-descartar">Descartar valores do PDF</button></div>`
@@ -159,6 +162,7 @@ document.addEventListener('click', (e) => {
   if (!el) return;
   if (el.dataset.acao === 'med-salvar') salvarMedidas();
   else if (el.dataset.acao === 'med-descartar') { med.pre = null; render(); }
+  else if (el.dataset.acao === 'med-relatar') { fb.tipo = 'problema'; fb.textoInicial = `Erro ao importar PDF de medidas.\n${med.erroDetalhe || ''}`; }
   else if (el.dataset.acao === 'med-apagar') {
     if (el.dataset.confirmando !== '1') { // confirmação no próprio botão (o aviso nativo falha em apps instalados no iPhone)
       el.dataset.confirmando = '1'; el.textContent = 'Apagar?';
@@ -298,10 +302,19 @@ function lerMedidasDoTexto(textoOriginal) {
 
 async function importarMedidasPdf(arquivo) {
   med.lendo = true; render();
-  let texto = '';
-  try { texto = await textoDoPdf(arquivo); } catch (e) { texto = null; }
+  let texto = '', erro = null;
+  med.erroPdf = null;
+  try { texto = await textoDoPdf(arquivo); } catch (e) { erro = e; }
   med.lendo = false;
-  if (texto === null) { render(); return toast('Não foi possível abrir este PDF.'); }
+  if (erro) {
+    const nome = erro?.name || '', msg = String(erro?.message || erro || '');
+    med.erroPdf = /Password/i.test(nome + msg) ? 'Este PDF está protegido por senha. Abra no celular, salve uma cópia sem senha (ou tire um print) e digite os valores.'
+      : /Invalid PDF|InvalidPDF|Missing PDF|FormatError/i.test(nome + msg) ? 'O arquivo não parece ser um PDF válido (pode estar corrompido).'
+      : 'Não foi possível abrir este PDF neste aparelho.';
+    med.erroDetalhe = `${nome || 'Erro'}: ${msg}`.slice(0, 300) + ` · ${arquivo.type || 'sem tipo'} · ${Math.round(arquivo.size / 1024)} KB`;
+    console.error('PDF de medidas:', erro);
+    render(); return;
+  }
   if (texto.replace(/\s/g, '').length < 20) { render(); return toast('Este PDF parece ser uma imagem (escaneado). Digite os valores abaixo.'); }
   const achado = lerMedidasDoTexto(texto);
   const valores = Object.keys(achado).filter((k) => k !== 'data' && k !== 'altura');

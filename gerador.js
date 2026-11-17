@@ -299,8 +299,8 @@ function telaPreferencias(r) {
 
 function telaCriar() {
   if (assist.passo === 0) {
-    return `<a href="#/treinos" class="small">‹ Treinos</a><h1>Novo programa</h1>
-      <p class="muted small">Escolha como quer criar o seu treino.</p>
+    return `${criandoParaAluno ? `<a href="#/aluno/${criandoParaAluno}" class="small">‹ ${esc(nomeDe(criandoParaAluno))}</a>` : '<a href="#/treinos" class="small">‹ Treinos</a>'}<h1>Novo programa</h1>
+      <p class="muted small">${criandoParaAluno ? `Programa para <b>${esc(nomeDe(criandoParaAluno))}</b>. Ele só recebe quando você tocar em Enviar.` : 'Escolha como quer criar o seu treino.'}</p>
       <button class="escolha-grande" data-acao="cr-iniciar"><b>Criar com o assistente</b><span>Responda algumas perguntas e o app gera as fichas, ou monte você mesmo pelo catálogo.</span></button>
       <a class="escolha-grande" href="#/importar"><b>Importar um treino pronto</b><span>Envie o PDF da ficha (ou cole o texto) que o app reconhece os exercícios.</span></a>
       <button class="escolha-grande" data-acao="cr-modelo"><b>Usar o modelo AB</b><span>6 fichas em circuito (superiores e inferiores), com vídeos, para 6 dias por semana.</span></button>`;
@@ -315,7 +315,7 @@ function telaCriar() {
 }
 
 function criarEAbrir(p) {
-  if (!podeTrocarPrograma()) return;
+  if (!criandoParaAluno && !podeTrocarPrograma()) return;
   adicionarPrograma(p);
   assist.passo = 0; assist.r = respostasPadrao();
   toast(`Programa criado: ${p.nome}`);
@@ -351,7 +351,7 @@ document.addEventListener('click', (e) => {
   } else if (acao === 'cr-gerar') criarEAbrir(gerarPrograma(r));
   else if (acao === 'cr-manual') criarEAbrir(gerarPrograma(r, { vazio: true }));
   else if (acao === 'cr-modelo') {
-    const id = programaPorId(ID_PADRAO) ? `prog-${uid()}` : ID_PADRAO;
+    const id = criandoParaAluno || programaPorId(ID_PADRAO) ? `prog-${uid()}` : ID_PADRAO;
     criarEAbrir(programaPadrao(id));
   }
 });

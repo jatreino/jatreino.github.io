@@ -29,7 +29,7 @@ function carregar(contaId) {
 let db = novoDb();
 // Cada alteração fica no celular na hora e, na conta do servidor, é enviada logo depois (servidor.js)
 function salvar() {
-  if (!contaAtual) return;
+  if (!contaAtual || somenteLeitura) return;
   db.atualizadoEm = Date.now();
   try { localStorage.setItem(chaveDados(contaAtual.id), JSON.stringify(db)); }
   catch (e) { toast('Não foi possível salvar no aparelho'); }
@@ -314,6 +314,9 @@ const telas = {
   'editar-comp': telaEditarComp, catalogo: telaCatalogo, trocar: telaTrocar, escolher: telaEscolher,
   criar: telaCriar, programa: telaPrograma, importar: telaImportar, 'trocar-comp': telaTrocarComp,
   relatorios: telaRelatorios,
+  convite: telaConvite, mensagens: telaMensagens, conversa: telaConversa, // social.js
+  alunos: telaAlunos, convidar: telaConvidar, aluno: telaAluno, enviar: telaEnviar, // professor.js
+  admin: telaAdmin, // admin.js
 };
 
 let ultimaPag = null;
@@ -331,8 +334,11 @@ function render() {
     treino: 'hoje', finalizar: 'hoje', registrar: 'hoje', sessao: 'historico', exercicio: 'progresso',
     ficha: 'treinos', 'editar-ex': 'treinos', 'editar-bloco': 'treinos', 'editar-textos': 'treinos', 'editar-comp': 'treinos',
     catalogo: 'treinos', escolher: 'treinos', trocar: rotaAtual().arg === 'sessao' ? 'hoje' : 'treinos',
-    criar: 'treinos', programa: 'treinos', importar: 'treinos', 'trocar-comp': rotaAtual().arg === 'sessao' ? 'hoje' : 'treinos',
+    criar: 'treinos', programa: 'treinos', importar: 'treinos', convite: 'hoje', ajustes: 'ajustes',
+    mensagens: ehProfessor() ? 'alunos' : 'hoje', conversa: ehProfessor() ? 'alunos' : 'hoje',
+    convidar: 'alunos', aluno: ehAdmin() && !ehProfessor() ? 'ajustes' : 'alunos', enviar: 'alunos', admin: ehProfessor() ? 'alunos' : 'ajustes', 'trocar-comp': rotaAtual().arg === 'sessao' ? 'hoje' : 'treinos',
   }[pag] || pag;
+  atualizarNav();
   document.querySelectorAll('#nav a').forEach((a) => a.classList.toggle('sel', a.dataset.tab === aba));
   tick();
   atualizarTelaLigada();
@@ -344,7 +350,7 @@ function telaHoje() {
   const hoje = new Date();
   const iso = isoDia(hoje);
   const prog = programaAtivo();
-  let h = `<p class="muted">${fmtDataLonga(iso)}</p><h1>Hoje</h1>`;
+  let h = `<p class="muted">${fmtDataLonga(iso)}</p><h1>Hoje</h1>${cartoesSociaisHoje()}`;
   if (!prog) {
     return h + `<div class="card destaque"><h2>Vamos montar o seu treino</h2>
       <p class="muted small">Responda algumas perguntas para o app gerar as suas fichas, monte você mesmo pelo catálogo ou importe uma ficha pronta.</p>
@@ -652,6 +658,7 @@ function telaSessao(id) {
     }
     h += `</table><p class="muted small">Carga × repetições. ↑ = topo da faixa nas séries: subir carga na próxima.</p></div>`;
   }
+  if (!somenteLeitura) h += blocoComentarios(s.id, contaAtual.id);
   h += `<button class="btn perigo" data-acao="apagar-sessao" data-id="${s.id}">Apagar este treino</button>`;
   return h;
 }
@@ -783,7 +790,7 @@ function cartaoPerfil() {
 }
 
 // Versão publicada (mostrada em Ajustes, para conferir se o celular já carregou a atualização)
-const VERSAO_APP = '2026.11.17';
+const VERSAO_APP = '2026.11.17b';
 async function buscarAtualizacao() {
   toast('Buscando atualização...');
   try {
@@ -796,6 +803,7 @@ async function buscarAtualizacao() {
 function telaAjustes() {
   return `<h1>Ajustes</h1>
     ${cartaoConta()}
+    ${cartaoSocial()}
     ${cartaoPerfil()}
     <div class="card"><div class="linha entre"><div class="cresce"><b>Manter tela ligada</b><p class="muted small">Durante o treino a tela não apaga sozinha.</p></div>
       <button class="btn-mini" data-acao="tela">${db.config.telaLigada ? 'Ligado' : 'Desligado'}</button></div></div>

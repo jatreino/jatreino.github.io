@@ -45,6 +45,7 @@ const opcoes = (lista, sel) => lista.map(([v, t]) => `<option value="${esc(v)}" 
 
 // ---------- Lista de fichas ----------
 function telaTreinos() {
+  programaEmEdicao = null;
   const p = programaAtivo();
   let h = `<h1>Treinos</h1>`;
   if (!p) {
@@ -69,10 +70,15 @@ function telaTreinos() {
       <p class="muted small">${esc(t.resumo)}</p>
       <div class="linha entre small"><span class="muted">${t.blocos.length} blocos · ${exerciciosDe(t).length} exercícios · ${c.total} séries</span><span class="seta">›</span></div></a>`;
   }
-  const outros = (db.programas || []).filter((x) => x.id !== p?.id);
+  const outros = (db.programas || []).filter((x) => x.id !== p?.id && !x.paraAluno);
+  const deAlunos = (db.programas || []).filter((x) => x.paraAluno);
   if (outros.length) {
     h += `<h3>Outros programas</h3><div class="card">${outros.map((x) => `<a class="item" href="#/programa/${x.id}">
       <div class="cresce"><b>${esc(x.nome)}</b><div class="muted small">${x.ordem.length} fichas · ${esc(progressoPrograma(x).texto)}</div></div><span class="seta">›</span></a>`).join('')}</div>`;
+  }
+  if (deAlunos.length) {
+    h += `<h3>Programas para alunos</h3><div class="card">${deAlunos.map((x) => `<a class="item" href="#/programa/${x.id}">
+      <div class="cresce"><b>${esc(x.nome)}</b><div class="muted small">Para ${esc(nomeDe(x.paraAluno))} · ${x.ordem.length} fichas</div></div><span class="seta">›</span></a>`).join('')}</div>`;
   }
   return h + `<a class="btn" href="#/criar">+ Novo programa</a>
     <a class="btn sec" href="#/catalogo">Catálogo de exercícios (${CATALOGO.length})</a>`;
@@ -83,7 +89,7 @@ function telaFicha(f, args) {
   const t = fichaDe(f);
   if (!t) return `<div class="vazio">Ficha não encontrada.</div>`;
   const editando = args[1] === 'editar';
-  let h = `<a href="#/treinos" class="small">‹ Treinos</a>
+  let h = `${voltarDoEditor()}
     <h1>${esc(t.titulo)}</h1><p class="muted">${esc(t.tipo)} · ${esc(t.resumo)}</p>`;
 
   if (!editando) {
@@ -413,7 +419,7 @@ document.addEventListener('click', (e) => {
   }
   else if (acao === 'ed-restaurar') {
     if (!confirm(`Voltar a ficha ${f} para a versão original? Todas as alterações feitas nela serão desfeitas. O histórico de treinos não é afetado.`)) return;
-    delete programaAtivo().fichas[f]; salvar(); toast('Ficha restaurada'); location.hash = `#/ficha/${f}`;
+    delete programaContexto().fichas[f]; salvar(); toast('Ficha restaurada'); location.hash = `#/ficha/${f}`;
   }
 });
 

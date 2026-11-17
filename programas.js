@@ -36,24 +36,38 @@ function migrarProgramas(d) {
 
 const programaPorId = (id) => (db.programas || []).find((p) => p.id === id) || null;
 const programaAtivo = () => programaPorId(db.programaAtivo);
+// Programa aberto na tela de configuração (pode não ser o ativo). As telas do editor de fichas
+// trabalham nele; as demais telas (Hoje, treino) sempre usam o programa ativo.
+let programaEmEdicao = null;
+let somenteLeitura = false; // professor vendo os dados de um aluno (professor.js): nada é gravado
+const ROTAS_EDITOR = ['ficha', 'editar-ex', 'editar-bloco', 'editar-textos', 'editar-comp', 'escolher', 'trocar', 'trocar-comp'];
+function programaContexto() {
+  const r = rotaAtual();
+  if (programaEmEdicao && ROTAS_EDITOR.includes(r.pag) && r.arg !== 'sessao') return programaPorId(programaEmEdicao) || programaAtivo();
+  return programaAtivo();
+}
+const voltarDoEditor = () => {
+  const p = programaContexto();
+  return p && p.id !== db.programaAtivo ? `<a href="#/programa/${p.id}" class="small">‹ ${esc(p.nome)}</a>` : '<a href="#/treinos" class="small">‹ Treinos</a>';
+};
 const fichasIds = (p = programaAtivo()) => (p ? p.ordem : []);
 
 // Ficha em uso: no programa padrão, a versão editada pelo usuário ou a de treinos.js
-function fichaDe(id, p = programaAtivo()) {
+function fichaDe(id, p = programaContexto()) {
   if (!p) return null;
   return p.fichas[id] || (p.origem === 'padrao' ? TREINOS[id] || null : null);
 }
 const fichaDaSessao = (s) => fichaDe(s.treino, programaPorId(s.programa));
-function tipoFicha(id, p = programaAtivo()) {
+function tipoFicha(id, p = programaContexto()) {
   if (p?.origem === 'padrao' && TIPO_FICHA[id]) return TIPO_FICHA[id];
   const t = fichaDe(id, p);
   return t?.tipoCurto || t?.tipo || '';
 }
 function editavel(f) {
-  const p = programaAtivo();
+  const p = programaContexto();
   return (p.fichas[f] ??= structuredClone(TREINOS[f]));
 }
-const foiEditada = (f) => programaAtivo()?.origem === 'padrao' && !!programaAtivo().fichas[f];
+const foiEditada = (f) => programaContexto()?.origem === 'padrao' && !!programaContexto().fichas[f];
 
 // ---------- Periodicidade ----------
 function somarData(iso, tipo, valor) {
@@ -90,6 +104,10 @@ function progressoPrograma(p) {
 
 // ---------- Criar, ativar, renovar ----------
 function adicionarPrograma(p) {
+  if (typeof criandoParaAluno !== 'undefined' && criandoParaAluno) { // professor criando para um aluno
+    p.paraAluno = criandoParaAluno; criandoParaAluno = null;
+    db.programas.push(p); programaEmEdicao = p.id; salvar(); return;
+  }
   db.programas.push(p);
   db.programaAtivo = p.id;
   fichaEscolhida = null;
@@ -110,12 +128,16 @@ function telaPrograma(id) {
   const p = programaPorId(id);
   if (!p) return `<div class="vazio">Programa não encontrado.<a class="btn sec" href="#/treinos">Voltar</a></div>`;
   const ativo = db.programaAtivo === p.id;
+  programaEmEdicao = ativo ? null : p.id;
   const prog = progressoPrograma(p);
+  const aluno = p.paraAluno;
   const per = p.periodicidade || { tipo: 'livre', valor: 0 };
-  let h = `<a href="#/treinos" class="small">‹ Treinos</a><h1>${esc(p.nome)}</h1>
-    <p class="muted small">${ativo ? '<span class="tag ok">Programa ativo</span> ' : ''}${esc(prog.texto)}</p>
+  let h = `${aluno ? `<a href="#/aluno/${aluno}" class="small">‹ ${esc(nomeDe(aluno))}</a>` : '<a href="#/treinos" class="small">‹ Treinos</a>'}<h1>${esc(p.nome)}</h1>
+    <p class="muted small">${ativo ? '<span class="tag ok">Programa ativo</span> ' : ''}${aluno ? `<span class="tag">Para ${esc(nomeDe(aluno))}</span> ` : ''}${aluno ? '' : esc(prog.texto)}</p>
     ${prog.fracao !== null ? `<div class="progresso-barra"><i style="width:${prog.fracao * 100}%"></i></div>` : ''}`;
-  if (!ativo) h += `<button class="btn" data-acao="prog-ativar" data-id="${p.id}">Usar este programa</button>`;
+  if (aluno) h += `<a class="btn" href="#/enviar/${p.id}/${aluno}">Enviar para ${esc(nomeDe(aluno))}</a>`;
+  else if (!ativo) h += `<button class="btn" data-acao="prog-ativar" data-id="${p.id}">Usar este programa</button>`;
+  if (!aluno && typeof ehProfessor === 'function' && ehProfessor()) h += `<a class="btn sec" href="#/enviar/${p.id}">Enviar para um aluno</a>`;
 
   h += `<h3>Fichas</h3><div class="card">`;
   p.ordem.forEach((f, i) => {
@@ -125,11 +147,11 @@ function telaPrograma(id) {
       <div class="ed-acoes">
         <button data-acao="prog-ficha-mover" data-id="${p.id}" data-i="${i}" data-dir="-1" ${i === 0 ? 'disabled' : ''} aria-label="Subir">↑</button>
         <button data-acao="prog-ficha-mover" data-id="${p.id}" data-i="${i}" data-dir="1" ${i === p.ordem.length - 1 ? 'disabled' : ''} aria-label="Descer">↓</button>
-        ${ativo ? `<button data-acao="ir" data-href="#/ficha/${encodeURIComponent(f)}/editar" aria-label="Editar">✎</button>` : ''}
+        <button data-acao="ir" data-href="#/ficha/${encodeURIComponent(f)}/editar" aria-label="Editar">✎</button>
         <button class="perigo" data-acao="prog-ficha-remover" data-id="${p.id}" data-f="${esc(f)}" aria-label="Remover">🗑</button>
       </div></div>`;
   });
-  h += `${ativo ? `<button class="btn-add" data-acao="prog-ficha-nova" data-id="${p.id}">+ Nova ficha</button>` : '<p class="muted small">Ative o programa para editar as fichas.</p>'}</div>`;
+  h += `<button class="btn-add" data-acao="prog-ficha-nova" data-id="${p.id}">+ Nova ficha</button></div>`;
 
   h += `<h3>Configuração</h3><div class="card form">
     <label>Nome do programa<input class="input-texto" id="p-nome" value="${esc(p.nome)}"></label>

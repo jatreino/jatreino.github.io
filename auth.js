@@ -76,6 +76,11 @@ function entrarServidor(user) {
   localStorage.removeItem(SESSAO_KEY);
   abrirConta(contaDoUsuario(user));
   sincronizarAoAbrir();
+  carregarPerfil().then(() => {
+    const convite = localStorage.getItem(CONVITE_KEY);
+    if (convite && social.disponivel && rotaAtual().pag !== 'convite') location.hash = `#/convite/${convite}`;
+    else if (contaAtual) render();
+  }).catch(() => {});
 }
 
 function irParaApp() {
@@ -93,6 +98,8 @@ async function sair() {
   localStorage.removeItem(SESSAO_KEY);
   contaAtual = null;
   db = novoDb();
+  meuPerfil = null; social.disponivel = false; social.naoLidas = 0; social.prescricoes = []; social.professores = [];
+  if (typeof prof !== 'undefined') { prof.alunos = null; prof.usuarios = {}; }
   modoLogin = 'entrar';
   render();
 }
@@ -118,7 +125,8 @@ function telaLogin() {
   const topo = `<div class="login-topo"><img src="icons/icon-192.png" alt="" class="login-logo"><h1>Meu Treino</h1>
     <p class="muted small">${subtitulo}</p></div>`;
   const erro = '<p class="login-erro small" id="login-erro" hidden></p>';
-  const aviso = avisoLogin ? `<div class="card destaque small">${esc(avisoLogin)}</div>` : '';
+  const aviso = (avisoLogin ? `<div class="card destaque small">${esc(avisoLogin)}</div>` : '')
+    + (localStorage.getItem(CONVITE_KEY) && !avisoLogin ? '<div class="card destaque small">Você recebeu um convite do seu professor. Entre ou crie sua conta para aceitar.</div>' : '');
   const voltar = '<button class="btn sec" data-acao="login-modo" data-modo="entrar">Voltar ao login</button>';
 
   if (modoLogin === 'nova-senha') {

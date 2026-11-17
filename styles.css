@@ -253,3 +253,20 @@ svg.grafico { display: block; width: 100%; height: auto; margin-top: 8px; }
 .nav a.sel { color: var(--accent); }
 
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--nav-h) + var(--safe-b) + 110px); z-index: 40; background: #fff; color: #111; padding: 10px 16px; border-radius: 20px; font-size: 14px; font-weight: 600; max-width: calc(100% - 32px); box-shadow: 0 6px 24px rgba(0,0,0,.4); }
+
+/* ---------- Perfis: alunos, mensagens, administração ---------- */
+.tag.alerta { background: rgba(255, 90, 90, .15); color: #ff8a8a; border-color: transparent; }
+.tem-aviso { position: relative; }
+.tem-aviso .ico::after { content: ''; position: absolute; top: 4px; margin-left: 2px; width: 8px; height: 8px; border-radius: 50%; background: #ff4d4d; }
+.conversa { display: flex; flex-direction: column; gap: 6px; padding-bottom: 90px; }
+.conversa-dia { text-align: center; color: var(--muted); font-size: 12px; margin: 12px 0 4px; }
+.balao { align-self: flex-start; max-width: 85%; background: var(--card2); border: 1px solid var(--line); border-radius: 14px 14px 14px 4px; padding: 8px 12px; margin: 4px 0; font-size: 15px; line-height: 1.35; overflow-wrap: anywhere; }
+.balao.meu { align-self: flex-end; background: var(--accent-soft); border-color: var(--accent); border-radius: 14px 14px 4px 14px; }
+.card .balao { display: block; max-width: none; }
+.balao .hora { display: block; text-align: right; font-size: 11px; color: var(--muted); margin-top: 2px; }
+.barra-fixa textarea { flex: 1; min-height: 44px; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0; }
+.stat { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px; text-align: center; }
+.stat b { display: block; font-size: 22px; }
+.stat span { font-size: 11px; color: var(--muted); }
+a.ficha { text-decoration: none; color: inherit; }

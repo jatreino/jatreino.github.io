@@ -16,7 +16,7 @@ function novoDb() {
   return {
     versao: 1, sessoes: [], ativa: null, config: { telaLigada: true },
     programas: [], programaAtivo: null, // programas.js
-    perfil: { nascimento: '', altura: '', pesos: [] }, // pesos: [{ data, kg }]
+    perfil: { nascimento: '', altura: '', sexo: '', pesos: [], medidas: [] }, // pesos: [{ data, kg }]; medidas: ver medidas.js
   };
 }
 function carregar(contaId) {
@@ -814,6 +814,8 @@ function cartaoPerfil() {
     <div class="form">
       <label>Data de nascimento<input type="date" class="input-texto" data-perfil="nascimento" value="${esc(p.nascimento)}"></label>
       <label>Altura (cm)<input inputmode="numeric" class="input-texto" data-perfil="altura" value="${esc(p.altura)}" placeholder="ex.: 178"></label>
+      <label>Sexo <span class="muted">(opcional, usado nas estimativas)</span><select data-perfil="sexo">
+        ${[['', 'Prefiro não informar'], ['F', 'Feminino'], ['M', 'Masculino']].map(([v, t]) => `<option value="${v}" ${(p.sexo || '') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
       <label>Peso de hoje (kg)<div class="linha"><input inputmode="decimal" class="input-texto cresce" id="novo-peso" placeholder="${pesos[0] ? fmtKg(pesos[0].kg) : 'ex.: 91'}">
         <button class="btn-mini" data-acao="registrar-peso">Registrar</button></div></label>
     </div>
@@ -825,7 +827,7 @@ function cartaoPerfil() {
 }
 
 // Versão publicada (mostrada em Ajustes, para conferir se o celular já carregou a atualização)
-const VERSAO_APP = '2026.11.17j';
+const VERSAO_APP = '2026.11.17k';
 async function buscarAtualizacao() {
   toast('Buscando atualização...');
   try {
@@ -840,7 +842,7 @@ const NOME_PAPEL_CURTO = { aluno: 'Aluno', professor: 'Personal', admin: 'Admini
 function secoesAjustes() {
   const c = contaAtual;
   const idade = idadeEm(db.perfil.nascimento), peso = pesoEm();
-  const resumoDados = [idade !== null ? `${idade} anos` : '', peso ? `${fmtKg(peso)} kg` : ''].filter(Boolean).join(' · ') || 'Nascimento, altura e peso';
+  const resumoDados = [idade !== null ? `${idade} anos` : '', peso ? `${fmtKg(peso)} kg` : ''].filter(Boolean).join(' · ') || 'Nascimento, altura, peso e medidas';
   const tema = (TEMAS.find(([v]) => v === temaAtual()) || [, ''])[1].replace(/^\S+\s/, '');
   let nomePersonal = '', resumoPersonal = '';
   if (social.disponivel && meuPerfil) {
@@ -850,7 +852,7 @@ function secoesAjustes() {
   }
   return [
     { id: 'conta', ico: '🔐', nome: c.demo ? 'Conta de demonstração' : 'Conta e segurança', resumo: c.demo ? 'Treinos de exemplo' : textoSync(), tela: telaAjustesConta },
-    { id: 'dados', ico: '👤', nome: 'Meus dados', resumo: resumoDados, tela: cartaoPerfil },
+    { id: 'dados', ico: '👤', nome: 'Meus dados', resumo: resumoDados, tela: () => cartaoPerfil() + cartaoMedidas() },
     nomePersonal && { id: 'personal', ico: '👥', nome: nomePersonal, resumo: resumoPersonal, tela: cartaoSocial },
     { id: 'treino', ico: '🏋️', nome: 'Treino', resumo: `Tela ligada: ${db.config.telaLigada ? 'sim' : 'não'}${programaAtivo() ? ` · ${fichasIds().join(' → ')}` : ''}`, tela: telaAjustesTreino },
     { id: 'aparencia', ico: '🎨', nome: 'Aparência', resumo: tema, tela: cartaoTema },

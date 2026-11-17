@@ -383,3 +383,21 @@ h1 .selo-beta { font-size: 12px; margin-left: 6px; position: relative; top: -2px
 .menu-item .seta { flex: none; color: var(--muted); font-size: 22px; line-height: 1; }
 .menu-item:active { opacity: .6; }
 .btn-sair { width: 100%; margin-top: 4px; }
+
+/* ---------- Campos de data (iPhone: o campo nativo não respeitava a largura) ---------- */
+input[type="date"].input-texto { -webkit-appearance: none; appearance: none; display: block; box-sizing: border-box; width: 100%; max-width: 100%; min-width: 0; min-height: 44px; text-align: left; }
+input[type="date"].input-texto::-webkit-date-and-time-value { text-align: left; }
+input[type="date"].input-texto::-webkit-calendar-picker-indicator { margin-left: auto; }
+
+/* ---------- Medidas corporais ---------- */
+.grade-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+.grade-2 label { min-width: 0; }
+.grade-2 .input-texto { box-sizing: border-box; }
+.medidas-atuais { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin: 10px 0; }
+.medida { background: var(--card2); border-radius: var(--r-sm); padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; }
+.medida b { font-size: 17px; }
+.indicadores { margin: 4px 0 10px; }
+.med-form { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 10px; }
+.med-form summary { cursor: pointer; list-style: none; }
+.med-form summary::-webkit-details-marker { display: none; }
+.med-form .form { margin-top: 10px; }

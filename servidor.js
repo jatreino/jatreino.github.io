@@ -90,6 +90,11 @@ function juntar(destino, origem) {
   const p = origem.perfil || {};
   if (!destino.perfil.nascimento && p.nascimento) { destino.perfil.nascimento = p.nascimento; mudou = true; }
   if (!destino.perfil.altura && p.altura) { destino.perfil.altura = p.altura; mudou = true; }
+  if (!destino.perfil.sexo && p.sexo) { destino.perfil.sexo = p.sexo; mudou = true; }
+  destino.perfil.medidas ||= [];
+  for (const m of p.medidas || []) {
+    if (!destino.perfil.medidas.some((y) => y.data === m.data)) { destino.perfil.medidas.push(m); mudou = true; }
+  }
   for (const x of p.pesos || []) {
     if (!destino.perfil.pesos.some((y) => y.data === x.data)) { destino.perfil.pesos.push(x); mudou = true; }
   }

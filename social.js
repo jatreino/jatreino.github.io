@@ -129,11 +129,11 @@ function telaConvite(codigo) {
   if (estadoConvite.carregando) return '<div class="vazio">Carregando convite...</div>';
   if (!estadoConvite.professor || !estadoConvite.valido) {
     localStorage.removeItem(CONVITE_KEY);
-    return `<h1>Convite</h1><div class="card">Este convite não existe ou já foi usado. Peça um novo link ao seu professor.</div><a class="btn sec" href="#/hoje">Voltar</a>`;
+    return `<h1>Convite</h1><div class="card">Este convite não existe ou já foi usado. Peça um novo link ao seu personal.</div><a class="btn sec" href="#/hoje">Voltar</a>`;
   }
   return `<h1>Convite</h1><div class="card destaque">
     <h2>${esc(estadoConvite.professor)} convidou você</h2>
-    <p class="small">Ao aceitar, ${esc(estadoConvite.professor)} passa a ser seu professor no app e poderá:</p>
+    <p class="small">Ao aceitar, ${esc(estadoConvite.professor)} passa a ser seu personal no app e poderá:</p>
     <p class="small">• ver seus treinos, cargas, peso e relatórios;<br>• enviar programas de treino para você;<br>• trocar mensagens e comentar seus treinos.</p>
     <p class="muted small">Você pode desfazer o vínculo quando quiser, em Ajustes. Seus treinos continuam seus.</p>
     <button class="btn" data-acao="soc-aceitar" data-codigo="${esc(codigo)}">Aceitar convite</button>
@@ -219,9 +219,9 @@ function telaMensagens() {
     });
     return '<h1>Mensagens</h1><div class="vazio">Carregando...</div>';
   }
-  if (!listaMsgs.itens.length) return '<h1>Mensagens</h1><div class="vazio">Você ainda não tem com quem conversar. As conversas aparecem quando você se vincula a um professor.</div>';
+  if (!listaMsgs.itens.length) return '<h1>Mensagens</h1><div class="vazio">Você ainda não tem com quem conversar. As conversas aparecem quando você se vincula a um personal.</div>';
   return `<h1>Mensagens</h1><div class="card">${listaMsgs.itens.map((p) => `<a class="item" href="#/conversa/${p.id}">
-    <div class="cresce"><b>${esc(nomeDe(p.id))}</b>${social.professores.includes(p.id) ? ' <span class="tag">professor</span>' : ''}
+    <div class="cresce"><b>${esc(nomeDe(p.id))}</b>${social.professores.includes(p.id) ? ' <span class="tag">personal</span>' : ''}
       <div class="muted small">${p.ultima ? esc(p.ultima.texto.slice(0, 60)) : 'Sem mensagens'}</div></div>
     ${p.naoLidas ? `<span class="tag ac">${p.naoLidas}</span>` : '<span class="seta">›</span>'}</a>`).join('')}</div>`;
 }
@@ -254,24 +254,24 @@ function blocoComentarios(sessaoId, donoId) {
 // ---------- Ajustes: professor, alunos e pedido de acesso ----------
 function cartaoSocial() {
   if (!social.disponivel || !meuPerfil) return '';
-  let h = '<div class="card"><h2>Professor</h2>';
+  let h = `<div class="card"><h2>${meuPerfil.papel === 'aluno' ? 'Personal' : 'Seu personal'}</h2>`;
   if (social.professores.length) {
     h += social.professores.map((id) => `<div class="linha entre small" style="padding:8px 0;border-top:1px solid var(--line)">
       <b>${esc(nomeDe(id))}</b><span class="linha" style="gap:6px">
       <a class="btn-mini" href="#/conversa/${id}">Mensagens</a>
       <button class="btn-mini" data-acao="soc-desvincular" data-id="${id}">Desvincular</button></span></div>`).join('');
   } else {
-    h += '<p class="muted small">Você treina por conta própria. Se tiver um professor no app, peça o link de convite a ele.</p>';
+    h += '<p class="muted small">Você treina por conta própria. Se tiver um personal no app, peça o link de convite a ele.</p>';
   }
   if (meuPerfil.papel === 'aluno') {
     h += meuPerfil.pedido_professor
-      ? '<p class="small" style="margin-top:10px">⏳ Seu pedido para ser professor está em análise.</p>'
-      : `<details style="margin-top:10px"><summary class="small muted">Sou professor / personal trainer ▾</summary>
+      ? '<p class="small" style="margin-top:10px">⏳ Seu pedido para ser personal está em análise.</p>'
+      : `<details style="margin-top:10px"><summary class="small muted">Sou personal trainer / professor de educação física ▾</summary>
         <div class="form"><label>CREF (opcional)<input class="input-texto" id="cref" placeholder="ex.: 012345-G/BA"></label>
-        <button class="btn sec" data-acao="soc-pedir-professor">Pedir acesso de professor</button>
+        <button class="btn sec" data-acao="soc-pedir-professor">Pedir acesso de personal</button>
         <p class="muted small">Com o acesso aprovado, você poderá convidar alunos, prescrever treinos e acompanhar a evolução deles.</p></div></details>`;
   } else {
-    h += `<p class="small" style="margin-top:10px">Você tem acesso de <b>${meuPerfil.papel === 'admin' ? 'administrador' : 'professor'}</b>.
+    h += `<p class="small" style="margin-top:10px">Você tem acesso de <b>${meuPerfil.papel === 'admin' ? 'administrador' : 'personal'}</b>.
       <a href="#/alunos">Ver meus alunos</a>${ehAdmin() ? ' · <a href="#/admin">Administração</a>' : ''}</p>`;
   }
   return h + '</div>';
@@ -287,7 +287,7 @@ document.addEventListener('click', async (e) => {
     const { data, error } = await sb.rpc('aceitar_convite', { p_codigo: el.dataset.codigo });
     localStorage.removeItem(CONVITE_KEY);
     if (error) return toast(error.message || 'Não foi possível aceitar o convite');
-    toast(`Agora ${data || 'seu professor'} acompanha seus treinos`);
+    toast(`Agora ${data || 'seu personal'} acompanha seus treinos`);
     await atualizarAvisosSociais();
     location.hash = '#/hoje';
   } else if (acao === 'soc-recusar') { localStorage.removeItem(CONVITE_KEY); location.hash = '#/hoje'; }

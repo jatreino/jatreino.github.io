@@ -359,11 +359,12 @@ function render() {
   if (!contaAtual) { app.innerHTML = telaLogin(); $('#descanso').hidden = true; return; }
   const { pag, arg, args } = rotaAtual();
   const fn = telas[pag] || telaHoje;
-  const mesmaPag = pag === ultimaPag;
+  const chavePag = pag === 'ajustes' ? `ajustes/${arg || ''}` : pag;
+  const mesmaPag = chavePag === ultimaPag;
   const y = window.scrollY;
   app.innerHTML = fn(arg, args) + rodapeBeta(pag);
   window.scrollTo(0, mesmaPag ? y : 0);
-  ultimaPag = pag;
+  ultimaPag = chavePag;
   const aba = {
     treino: 'hoje', finalizar: 'hoje', registrar: 'hoje', sessao: 'historico', exercicio: 'progresso',
     ficha: 'treinos', 'editar-ex': 'treinos', 'editar-bloco': 'treinos', 'editar-textos': 'treinos', 'editar-comp': 'treinos',
@@ -824,7 +825,7 @@ function cartaoPerfil() {
 }
 
 // Versão publicada (mostrada em Ajustes, para conferir se o celular já carregou a atualização)
-const VERSAO_APP = '2026.11.17i';
+const VERSAO_APP = '2026.11.17j';
 async function buscarAtualizacao() {
   toast('Buscando atualização...');
   try {
@@ -834,28 +835,78 @@ async function buscarAtualizacao() {
   setTimeout(() => location.reload(), 800);
 }
 
-function telaAjustes() {
+// ---------- Tela: Ajustes (menu agrupado; cada item abre uma subpágina #/ajustes/<secao>) ----------
+const NOME_PAPEL_CURTO = { aluno: 'Aluno', professor: 'Personal', admin: 'Administrador' };
+function secoesAjustes() {
+  const c = contaAtual;
+  const idade = idadeEm(db.perfil.nascimento), peso = pesoEm();
+  const resumoDados = [idade !== null ? `${idade} anos` : '', peso ? `${fmtKg(peso)} kg` : ''].filter(Boolean).join(' · ') || 'Nascimento, altura e peso';
+  const tema = (TEMAS.find(([v]) => v === temaAtual()) || [, ''])[1].replace(/^\S+\s/, '');
+  let nomePersonal = '', resumoPersonal = '';
+  if (social.disponivel && meuPerfil) {
+    if (meuPerfil.papel === 'admin') [nomePersonal, resumoPersonal] = ['Alunos e administração', 'Seus alunos, personais e usuários'];
+    else if (meuPerfil.papel === 'professor') [nomePersonal, resumoPersonal] = ['Meus alunos', 'Alunos, convites e mensagens'];
+    else [nomePersonal, resumoPersonal] = ['Personal', social.professores.length ? social.professores.map(nomeDe).join(', ') : 'Treinando por conta própria'];
+  }
+  return [
+    { id: 'conta', ico: '🔐', nome: c.demo ? 'Conta de demonstração' : 'Conta e segurança', resumo: c.demo ? 'Treinos de exemplo' : textoSync(), tela: telaAjustesConta },
+    { id: 'dados', ico: '👤', nome: 'Meus dados', resumo: resumoDados, tela: cartaoPerfil },
+    nomePersonal && { id: 'personal', ico: '👥', nome: nomePersonal, resumo: resumoPersonal, tela: cartaoSocial },
+    { id: 'treino', ico: '🏋️', nome: 'Treino', resumo: `Tela ligada: ${db.config.telaLigada ? 'sim' : 'não'}${programaAtivo() ? ` · ${fichasIds().join(' → ')}` : ''}`, tela: telaAjustesTreino },
+    { id: 'aparencia', ico: '🎨', nome: 'Aparência', resumo: tema, tela: cartaoTema },
+    { id: 'backup', ico: '💾', nome: 'Backup e dados', resumo: `${db.sessoes.length} treino${db.sessoes.length === 1 ? '' : 's'} salvo${db.sessoes.length === 1 ? '' : 's'}`, tela: telaAjustesBackup },
+    { id: 'feedback', ico: '💬', nome: `Comentários ${seloBeta()}`, resumo: 'Relate um problema ou sugira melhorias', href: '#/feedback' },
+    { id: 'sobre', ico: 'ℹ️', nome: 'Sobre', resumo: `Versão ${VERSAO_APP} · fase de testes`, tela: telaAjustesSobre },
+  ].filter(Boolean);
+}
+
+function telaAjustes(secao) {
+  const secoes = secoesAjustes();
+  const s = secao && secoes.find((x) => x.id === secao && x.tela);
+  if (s) {
+    const titulo = s.nome.replace(/<[^>]+>/g, '').trim();
+    // o título do cartão repetiria o da página
+    return `<a href="#/ajustes" class="small">‹ Ajustes</a><h1>${titulo}</h1>${s.tela().replace(`<h2>${titulo}</h2>`, '')}`;
+  }
+  const c = contaAtual;
+  const papel = c.demo ? 'Demonstração' : meuPerfil ? NOME_PAPEL_CURTO[meuPerfil.papel] || '' : '';
   return `<h1>Ajustes</h1>
-    ${cartaoConta()}
-    <a class="card" href="#/feedback" style="display:block;color:inherit;text-decoration:none"><div class="linha entre"><div class="cresce"><b>Comentários e problemas ${seloBeta()}</b>
-      <p class="muted small" style="margin:4px 0 0">O app está em testes. Conte o que deu errado ou o que pode melhorar.</p></div><span class="seta">›</span></div></a>
-    ${cartaoSocial()}
-    ${cartaoPerfil()}
-    ${cartaoBiometria()}
-    ${cartaoTema()}
-    <div class="card"><div class="linha entre"><div class="cresce"><b>Manter tela ligada</b><p class="muted small">Durante o treino a tela não apaga sozinha.</p></div>
+    <div class="card ajustes-topo"><div class="avatar">${esc((c.nome || '?').trim().charAt(0).toUpperCase())}</div>
+      <div class="cresce"><b>${esc(c.nome || '')}</b><div class="muted small">${esc(c.email || (c.demo ? 'Fica só neste aparelho' : ''))}</div></div>
+      ${papel ? `<span class="tag">${papel}</span>` : ''}</div>
+    <div class="card menu-ajustes">${secoes.map((x) => `<a class="menu-item" href="${x.href || `#/ajustes/${x.id}`}">
+      <span class="menu-ico" aria-hidden="true">${x.ico}</span>
+      <span class="cresce"><b>${x.nome}</b><span class="muted small">${esc(x.resumo)}</span></span>
+      <span class="seta" aria-hidden="true">›</span></a>`).join('')}</div>
+    <button class="btn sec btn-sair" data-acao="sair">Sair</button>`;
+}
+
+function telaAjustesConta() {
+  return cartaoConta() + cartaoBiometria();
+}
+function telaAjustesTreino() {
+  return `<div class="card"><div class="linha entre"><div class="cresce"><b>Manter tela ligada</b><p class="muted small">Durante o treino a tela não apaga sozinha.</p></div>
       <button class="btn-mini" data-acao="tela">${db.config.telaLigada ? 'Ligado' : 'Desligado'}</button></div></div>
-    <div class="card"><h2>Backup</h2>
-      <p class="muted small">Os dados ficam salvos só neste celular. Faça backup de vez em quando (ex.: salvar no app Arquivos ou iCloud Drive).</p>
-      <button class="btn" data-acao="exportar">Exportar backup</button>
-      <label class="btn sec">Importar backup<input type="file" accept="application/json,.json" data-acao="importar" hidden></label></div>
     ${programaAtivo() ? `<div class="card"><h2>Sequência de treinos</h2>
       <p class="small">${esc(programaAtivo().nome)}: ${fichasIds().map(esc).join(' → ')} → ${esc(fichasIds()[0])}</p>
-      <p class="muted small">Não há dia fixo: o app sugere a ficha seguinte à última feita, mas você escolhe qualquer uma, em qualquer dia, inclusive domingo.</p></div>` : ''}
-    <div class="card"><p class="muted small">${db.sessoes.length} treinos salvos.</p>
-      <button class="btn perigo" data-acao="apagar-tudo">Apagar todos os dados</button></div>
-    <div class="card"><div class="linha entre"><div><b>Versão do app ${seloBeta()}</b><p class="muted small">${VERSAO_APP} · fase de testes</p></div>
-      <button class="btn-mini" data-acao="atualizar">Buscar atualização</button></div></div>`;
+      <p class="muted small">Não há dia fixo: o app sugere a ficha seguinte à última feita, mas você escolhe qualquer uma, em qualquer dia, inclusive domingo.</p>
+      <a class="btn sec" href="#/treinos">Ver e editar fichas</a></div>` : '<div class="card muted small">Você ainda não tem um programa de treino. <a href="#/criar">Criar agora</a></div>'}`;
+}
+function telaAjustesBackup() {
+  const nuvem = contaAtual?.servidor;
+  return `<div class="card"><h2>Backup</h2>
+      <p class="muted small">${nuvem ? 'Seus treinos já ficam salvos na sua conta. O backup é uma cópia extra, em arquivo.' : 'Os dados ficam salvos só neste aparelho. Faça backup de vez em quando (ex.: salvar no app Arquivos ou iCloud Drive).'}</p>
+      <button class="btn" data-acao="exportar">Exportar backup</button>
+      <label class="btn sec">Importar backup<input type="file" accept="application/json,.json" data-acao="importar" hidden></label></div>
+    <div class="card"><h2>Apagar dados</h2><p class="muted small">${db.sessoes.length} treinos salvos. Esta ação não pode ser desfeita.</p>
+      <button class="btn perigo" data-acao="apagar-tudo">Apagar todos os dados</button></div>`;
+}
+function telaAjustesSobre() {
+  return `<div class="card"><div class="linha entre"><div><b>Versão do app ${seloBeta()}</b><p class="muted small">${VERSAO_APP}</p></div>
+      <button class="btn-mini" data-acao="atualizar">Buscar atualização</button></div></div>
+    <div class="card small"><p style="margin-top:0">O <b>Já treinô?</b> está em <b>fase de testes</b>: pode haver falhas e mudanças frequentes.</p>
+      <p class="muted">As sugestões de treino não substituem a orientação de um profissional de educação física.</p>
+      <a class="btn sec" href="#/feedback">Enviar comentário ou relatar problema</a></div>`;
 }
 
 async function exportar() {

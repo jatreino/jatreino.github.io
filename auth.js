@@ -135,7 +135,7 @@ function telaLogin() {
     <p class="muted small">${subtitulo}</p></div>`;
   const erro = '<p class="login-erro small" id="login-erro" hidden></p>';
   const aviso = (avisoLogin ? `<div class="card destaque small">${esc(avisoLogin)}</div>` : '')
-    + (localStorage.getItem(CONVITE_KEY) && !avisoLogin ? '<div class="card destaque small">Você recebeu um convite do seu professor. Entre ou crie sua conta para aceitar.</div>' : '');
+    + (localStorage.getItem(CONVITE_KEY) && !avisoLogin ? '<div class="card destaque small">Você recebeu um convite do seu personal. Entre ou crie sua conta para aceitar.</div>' : '');
   const voltar = '<button class="btn sec" data-acao="login-modo" data-modo="entrar">Voltar ao login</button>';
 
   if (modoLogin === 'nova-senha') {
@@ -252,14 +252,12 @@ function cartaoConta() {
   const c = contaAtual;
   if (c.demo) {
     return `<div class="card"><h2>Conta</h2>
-      <div class="linha entre"><div><b>${esc(c.nome)}</b><div class="muted small">admin · demonstração</div></div>
-        <button class="btn-mini" data-acao="sair">Sair</button></div>
+      <div><b>${esc(c.nome)}</b><div class="muted small">admin · demonstração</div></div>
       <p class="muted small" style="margin-top:10px">Perfil para mostrar o app. Fica só neste aparelho e não afeta a sua conta.</p>
       <button class="btn sec" data-acao="demo-gerar">Carregar treinos de exemplo</button></div>`;
   }
   return `<div class="card"><h2>Conta</h2>
-    <div class="linha entre"><div><b>${esc(c.nome)}</b><div class="muted small">${esc(c.email || '')}</div></div>
-      <button class="btn-mini" data-acao="sair">Sair</button></div>
+    <div><b>${esc(c.nome)}</b><div class="muted small">${esc(c.email || '')}</div></div>
     <div class="linha entre small" style="margin-top:10px"><span class="muted" id="texto-sync">${esc(textoSync())}</span>
       <button class="btn-mini" data-acao="sincronizar">Sincronizar</button></div>
     <details style="margin-top:10px"><summary class="small muted">Trocar senha ▾</summary>

@@ -368,3 +368,18 @@ h1 .selo-beta { font-size: 12px; margin-left: 6px; position: relative; top: -2px
 .fb-item { padding: 12px 0; border-top: 1px solid var(--line); }
 .fb-item:first-child { border-top: 0; padding-top: 0; }
 .fb-item.resolvido { opacity: .6; }
+
+/* ---------- Ajustes: menu agrupado ---------- */
+.ajustes-topo { display: flex; align-items: center; gap: 12px; }
+.ajustes-topo .tag { flex: none; }
+.avatar { flex: none; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--accent); color: var(--on-accent); font-weight: 800; font-size: 18px; }
+.menu-ajustes { padding-top: 4px; padding-bottom: 4px; }
+.menu-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; color: inherit; text-decoration: none; border-top: 1px solid var(--line); min-height: 44px; }
+.menu-item:first-child { border-top: 0; }
+.menu-item .cresce { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.menu-item .cresce .muted { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.menu-ico { flex: none; width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; background: var(--card2); font-size: 17px; }
+.menu-item .seta { flex: none; color: var(--muted); font-size: 22px; line-height: 1; }
+.menu-item:active { opacity: .6; }
+.btn-sair { width: 100%; margin-top: 4px; }

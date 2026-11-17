@@ -30,7 +30,7 @@ function resumoUso(userId) {
   return { total: sessoes.length, semana: sessoes.filter((s) => s.data >= seteDias).length, ultimo: ult };
 }
 
-const NOME_PAPEL = { aluno: 'Aluno', professor: 'Professor', admin: 'Administrador' };
+const NOME_PAPEL = { aluno: 'Aluno', professor: 'Personal', admin: 'Administrador' };
 
 function telaAdmin() {
   if (!ehAdmin()) return '<div class="vazio">Área do administrador.</div>';
@@ -47,7 +47,7 @@ function telaAdmin() {
   let h = `<a href="#/ajustes" class="small">‹ Ajustes</a><h1>Administração</h1>
     <div class="stats">
       <div class="stat"><b>${adm.perfis.length}</b><span>usuários</span></div>
-      <div class="stat"><b>${contar('professor')}</b><span>professores</span></div>
+      <div class="stat"><b>${contar('professor')}</b><span>personais</span></div>
       <div class="stat"><b>${adm.vinculos.length}</b><span>vínculos</span></div>
       <div class="stat"><b>${ativos}</b><span>ativos em 7 dias</span></div>
       <div class="stat"><b>${treinosSemana}</b><span>treinos em 7 dias</span></div>
@@ -58,14 +58,14 @@ function telaAdmin() {
     <div class="form">
       <label>Nome<input class="input-texto" id="nu-nome" autocomplete="off"></label>
       <label>E-mail<input class="input-texto" type="email" id="nu-email" autocapitalize="none" autocomplete="off"></label>
-      <label>Papel<select id="nu-papel"><option value="aluno">Aluno</option><option value="professor">Professor</option></select></label>
-      <label>Professor que vai acompanhar (opcional)<select id="nu-prof"><option value="">Nenhum</option>
+      <label>Papel<select id="nu-papel"><option value="aluno">Aluno</option><option value="professor">Personal</option></select></label>
+      <label>Personal que vai acompanhar (opcional)<select id="nu-prof"><option value="">Nenhum</option>
         ${profs.map((p) => `<option value="${p.user_id}">${esc(p.nome || p.email)}</option>`).join('')}</select></label>
       <button class="btn" data-acao="adm-criar">Criar e enviar convite</button>
       <p class="muted small" style="margin:0">A pessoa recebe um e-mail com o link para entrar no app e criar a própria senha.</p>
     </div></details>`;
   if (pedidos.length) {
-    h += `<h3>Pedidos para ser professor</h3><div class="card">${pedidos.map((p) => `<div class="linha entre small" style="padding:8px 0;border-top:1px solid var(--line)">
+    h += `<h3>Pedidos para ser personal</h3><div class="card">${pedidos.map((p) => `<div class="linha entre small" style="padding:8px 0;border-top:1px solid var(--line)">
       <span><b>${esc(p.nome || '(sem nome)')}</b><br><span class="muted">${esc(p.email || '')}${p.cref ? ` · CREF ${esc(p.cref)}` : ''}</span></span>
       <span class="linha" style="gap:6px"><button class="btn-mini" data-acao="adm-aprovar" data-id="${p.user_id}">Aprovar</button>
       <button class="btn-mini" data-acao="adm-recusar" data-id="${p.user_id}">Recusar</button></span></div>`).join('')}</div>`;
@@ -82,7 +82,7 @@ function telaAdmin() {
             ${Object.entries(NOME_PAPEL).map(([v, t]) => `<option value="${v}" ${p.papel === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
         <div class="muted small">${esc(p.email || '')}${p.cref ? ` · CREF ${esc(p.cref)}` : ''}</div>
         <div class="small">${u.total} treinos · ${u.semana} na semana${u.ultimo ? ` · último em ${fmtData(u.ultimo)}` : ''}
-          ${alunos ? ` · ${alunos} aluno${alunos === 1 ? '' : 's'}` : ''}${profs.length ? ` · professor: ${esc(profs.join(', '))}` : ''}</div></div>`;
+          ${alunos ? ` · ${alunos} aluno${alunos === 1 ? '' : 's'}` : ''}${profs.length ? ` · personal: ${esc(profs.join(', '))}` : ''}</div></div>`;
     }).join('') || '<p class="muted small">Nenhum usuário encontrado.</p>'}</div>
     <p class="muted small">Toque no nome para ver treinos e relatórios do usuário (somente leitura).</p>`;
   return h;
@@ -125,7 +125,7 @@ document.addEventListener('click', async (e) => {
   if (!el || !el.dataset.acao.startsWith('adm-')) return;
   const id = el.dataset.id;
   if (el.dataset.acao === 'adm-criar') { adm.formAberto = true; return criarUsuario(el); }
-  if (el.dataset.acao === 'adm-aprovar') { if (await mudarPapel(id, 'professor')) { toast(`${nomeDe(id)} agora é professor`); render(); } }
+  if (el.dataset.acao === 'adm-aprovar') { if (await mudarPapel(id, 'professor')) { toast(`${nomeDe(id)} agora é personal`); render(); } }
   else if (el.dataset.acao === 'adm-recusar') {
     const { error } = await sb.from('perfis').update({ pedido_professor: false }).eq('user_id', id);
     if (error) return toast('Não foi possível recusar');

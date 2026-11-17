@@ -73,7 +73,7 @@ function indicadoresAluno(dados) {
 
 // ---------- Lista de alunos ----------
 function telaAlunos() {
-  if (!ehProfessor()) return '<div class="vazio">Área de professores.</div>';
+  if (!ehProfessor()) return '<div class="vazio">Área dos personais.</div>';
   if (!prof.alunos && !prof.carregando) carregarAlunos();
   let h = `<h1>Alunos</h1>
     <div class="linha" style="gap:8px"><a class="btn" href="#/convidar">+ Convidar aluno</a>

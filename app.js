@@ -177,6 +177,10 @@ function migrarFichas() {
 function proximaFicha() {
   const p = programaAtivo(), ordem = fichasIds(p);
   if (!ordem.length) return null;
+  // Treinos com dia da semana definido (Criar sozinho): o do dia de hoje tem prioridade, se ainda não foi feito hoje
+  const diaHoje = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][new Date().getDay()];
+  const doDia = ordem.find((f) => (p.fichas?.[f]?.dias || []).includes(diaHoje));
+  if (doDia && !db.sessoes.some((s) => s.programa === p.id && s.treino === doDia && s.data === isoDia())) return doDia;
   const ult = sessoesOrdenadas().find((s) => s.programa === p.id && ordem.includes(s.treino));
   return ult ? ordem[(ordem.indexOf(ult.treino) + 1) % ordem.length] : ordem[0];
 }
@@ -351,6 +355,7 @@ const telas = {
   alunos: telaAlunos, convidar: telaConvidar, aluno: telaAluno, enviar: telaEnviar, // professor.js
   admin: telaAdmin, // admin.js
   feedback: telaFeedback, // feedback.js
+  montar: telaMontar, // montar.js
   'excluir-conta': telaExcluirConta, // conta.js
 };
 
@@ -360,7 +365,7 @@ function render() {
   if (!contaAtual) { app.innerHTML = telaLogin(); $('#descanso').hidden = true; return; }
   const { pag, arg, args } = rotaAtual();
   const fn = telas[pag] || telaHoje;
-  const chavePag = pag === 'ajustes' ? `ajustes/${arg || ''}` : pag;
+  const chavePag = ['ajustes', 'montar'].includes(pag) ? `${pag}/${arg || ''}` : pag;
   const mesmaPag = chavePag === ultimaPag;
   const y = window.scrollY;
   app.innerHTML = fn(arg, args) + rodapeBeta(pag);
@@ -370,7 +375,7 @@ function render() {
     treino: 'hoje', finalizar: 'hoje', registrar: 'hoje', sessao: 'historico', exercicio: 'progresso',
     ficha: 'treinos', 'editar-ex': 'treinos', 'editar-bloco': 'treinos', 'editar-textos': 'treinos', 'editar-comp': 'treinos',
     catalogo: 'treinos', escolher: 'treinos', trocar: rotaAtual().arg === 'sessao' ? 'hoje' : 'treinos',
-    criar: 'treinos', programa: 'treinos', importar: 'treinos', convite: 'hoje', ajustes: 'ajustes', feedback: 'ajustes', 'excluir-conta': 'ajustes',
+    criar: 'treinos', montar: 'treinos', programa: 'treinos', importar: 'treinos', convite: 'hoje', ajustes: 'ajustes', feedback: 'ajustes', 'excluir-conta': 'ajustes',
     mensagens: ehProfessor() ? 'alunos' : 'hoje', conversa: ehProfessor() ? 'alunos' : 'hoje',
     convidar: 'alunos', aluno: ehAdmin() && !ehProfessor() ? 'ajustes' : 'alunos', enviar: 'alunos', admin: ehProfessor() ? 'alunos' : 'ajustes', 'trocar-comp': rotaAtual().arg === 'sessao' ? 'hoje' : 'treinos',
   }[pag] || pag;
@@ -389,9 +394,9 @@ function telaHoje() {
   let h = `<header class="hoje-topo"><img src="marca/logotipo_horizontal.svg" alt="Já treinô?" class="hoje-logo"></header><p class="muted">${fmtDataLonga(iso)}</p><h1>Hoje</h1>${cartaoFeedbackHoje()}${cartoesSociaisHoje()}${cartaoOfertaBiometria()}`;
   if (!prog) {
     return h + `<div class="card destaque"><h2>Vamos montar o seu treino</h2>
-      <p class="muted small">Responda algumas perguntas para o app gerar as suas fichas, monte você mesmo pelo catálogo ou importe uma ficha pronta.</p>
-      <a class="btn" href="#/criar">Criar meu treino</a>
-      <a class="btn sec" href="#/importar">Importar treino pronto (PDF ou texto)</a></div>
+      <p class="muted small" style="margin-bottom:0">Escolha como prefere começar. Dá para mudar tudo depois.</p>
+      ${opcoesNovoPrograma()}</div>
+      ${social.disponivel && !social.professores.length ? '<p class="muted small">Tem personal? Peça a ele o convite do Já treinô? e o treino chega pronto para você.</p>' : ''}
       <p class="muted small">Versão de testes: as sugestões de treino não substituem a orientação de um profissional de educação física.</p>`;
   }
   const sugestao = proximaFicha();
@@ -475,7 +480,11 @@ function telaRegistrar() {
 // ---------- Vídeo do exercício ----------
 // Mostra só a miniatura; o vídeo carrega ao tocar, em loop e sem som (como um GIF).
 function videoExercicio(ex) {
-  if (!ex.video) return '';
+  if (!ex.video) { // sem vídeo próprio: atalho para buscar a execução
+    if (!ex.nome) return '';
+    const q = encodeURIComponent(`${ex.nome} execução correta`);
+    return `<a class="video-busca small" href="https://www.youtube.com/results?search_query=${q}" target="_blank" rel="noopener">▶ Ver como fazer (busca no YouTube)</a>`;
+  }
   const id = esc(ex.video);
   return `<div class="video ${ex.vertical ? 'vertical' : ''}" data-acao="video" data-video="${id}">
     <img src="https://i.ytimg.com/vi/${id}/hqdefault.jpg" alt="" loading="lazy">
@@ -831,7 +840,7 @@ function cartaoPerfil() {
 }
 
 // Versão publicada (mostrada em Ajustes, para conferir se o celular já carregou a atualização)
-const VERSAO_APP = '2026.11.17s';
+const VERSAO_APP = '2026.11.17t';
 async function buscarAtualizacao() {
   toast('Buscando atualização...');
   try {

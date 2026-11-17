@@ -4,8 +4,8 @@
 // Cada um tem um padrão de movimento e um equipamento; exercícios com o mesmo padrão são equivalentes
 // e podem substituir um ao outro sem mudar o objetivo do treino.
 
-const EQUIPAMENTOS = ['Máquina', 'Polia', 'Halteres', 'Barra', 'Smith', 'Peso corporal', 'Elástico'];
-const GRUPOS = ['Peito', 'Costas', 'Ombros', 'Bíceps', 'Tríceps', 'Quadríceps', 'Posteriores', 'Glúteos', 'Panturrilhas'];
+const EQUIPAMENTOS = ['Máquina', 'Polia', 'Halteres', 'Barra', 'Smith', 'Peso corporal', 'Elástico', 'Kettlebell'];
+const GRUPOS = ['Peito', 'Costas', 'Ombros', 'Bíceps', 'Tríceps', 'Quadríceps', 'Posteriores', 'Glúteos', 'Panturrilhas', 'Abdômen', 'Corpo inteiro'];
 
 // id -> [padrão de movimento, equipamento] dos exercícios que já estão nas fichas
 const META = {
@@ -108,7 +108,7 @@ const CATALOGO = (() => {
   for (const f of FICHAS) for (const b of TREINOS[f].blocos) for (const ex of b.exercicios) {
     if (!porId.has(ex.id)) porId.set(ex.id, { ...ex, padrao: META[ex.id]?.[0] || `${ex.grupo} · outros`, equip: META[ex.id]?.[1] || '' });
   }
-  for (const ex of EXTRAS) porId.set(ex.id, ex);
+  for (const ex of [...EXTRAS, ...EXERCICIOS_EXTRA]) porId.set(ex.id, ex); // exercicios.js
   return [...porId.values()].sort((a, b) => GRUPOS.indexOf(a.grupo) - GRUPOS.indexOf(b.grupo) || a.nome.localeCompare(b.nome));
 })();
 const catalogoPorId = (id) => CATALOGO.find((x) => x.id === id) || null;

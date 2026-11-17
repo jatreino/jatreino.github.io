@@ -423,3 +423,20 @@ input[type="date"].input-texto::-webkit-calendar-picker-indicator { margin-left:
 .link-perigo { color: var(--danger); }
 .lista-exclusao { margin: 6px 0 10px; padding-left: 20px; }
 .lista-exclusao li { margin: 3px 0; }
+.video-busca { display: inline-block; margin: 6px 0; color: var(--link); }
+
+/* ---------- Novo programa e "Criar sozinho" ---------- */
+.escolha-grande.com-icone { display: flex; gap: 12px; align-items: flex-start; }
+.escolha-grande.com-icone > i { font-style: normal; font-size: 22px; line-height: 1.2; flex: none; }
+.escolha-grande.com-icone > span { display: block; margin: 0; color: var(--text); font-size: inherit; }
+.dias-semana { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.dias-semana button { padding: 8px 0; border-radius: 10px; border: 1px solid var(--line); background: var(--card2); color: var(--text); font: inherit; font-size: 13px; cursor: pointer; }
+.dias-semana button.sel { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 700; }
+.lista-montar { margin: 10px 0; }
+.ex-montar { display: flex; gap: 8px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.ex-montar .cresce { min-width: 0; }
+.ex-montar-acoes { display: flex; gap: 4px; flex: none; }
+.ex-montar-acoes .btn-mini { padding: 6px 9px; }
+.ex-montar-acoes .btn-mini:disabled { opacity: .35; }
+.input-mini { width: 44px; text-align: center; font: inherit; font-size: 15px; padding: 4px; border: 1px solid var(--line); border-radius: 8px; background: var(--card2); color: var(--text); }
+.btn:disabled { opacity: .5; }

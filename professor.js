@@ -104,7 +104,7 @@ function telaAlunos() {
 window.addEventListener('hashchange', () => {
   const pag = rotaAtual().pag;
   if (pag === 'alunos') prof.alunos = null;
-  if (!['criar', 'importar', 'catalogo'].includes(pag)) criandoParaAluno = null;
+  if (!['criar', 'importar', 'catalogo', 'montar'].includes(pag)) criandoParaAluno = null;
 });
 
 // ---------- Convidar ----------

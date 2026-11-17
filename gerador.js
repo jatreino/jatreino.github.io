@@ -8,15 +8,18 @@ const OBJETIVOS = [['hipertrofia', 'Ganhar massa muscular'], ['forca', 'Ganhar f
 const NIVEIS = [['iniciante', 'Iniciante', 'Menos de 6 meses de treino, ou voltando agora'], ['intermediario', 'Intermediário', '6 meses a 2 anos de treino regular'], ['avancado', 'Avançado', 'Mais de 2 anos de treino regular']];
 const DIVISOES = [['auto', 'O app escolhe', 'Pela frequência e pela experiência'], ['fullbody', 'Corpo inteiro', 'Todos os grupos em cada treino'], ['ab', 'AB', 'Superiores e inferiores'], ['abc', 'ABC', 'Empurrar, puxar e pernas'], ['abcd', 'ABCD', 'Peito, costas, pernas, ombros e braços']];
 const MODALIDADES = [['circuito', 'Circuito (em voltas)', 'Uma série de cada exercício do bloco, descanso ao fim da volta'], ['tradicional', 'Séries tradicionais', 'Todas as séries de um exercício, depois o próximo']];
-const LOCAIS = [['completa', 'Academia completa', EQUIPAMENTOS], ['predio', 'Academia de prédio', ['Máquina', 'Polia', 'Halteres', 'Peso corporal', 'Elástico']], ['casa', 'Em casa', ['Halteres', 'Peso corporal', 'Elástico']]];
+const LOCAIS = [['completa', 'Academia completa', EQUIPAMENTOS], ['predio', 'Academia de prédio', ['Máquina', 'Polia', 'Halteres', 'Peso corporal', 'Elástico']], ['casa', 'Em casa', ['Halteres', 'Peso corporal', 'Elástico', 'Kettlebell']]];
 const LIMITACOES = [['joelho', 'Joelho'], ['ombro', 'Ombro'], ['lombar', 'Lombar / coluna']];
 const APARELHOS_CARDIO = [['Esteira', 'Esteira'], ['Bicicleta', 'Bicicleta'], ['Elíptico', 'Elíptico'], ['Escada', 'Escada']];
 
 // Exercícios que o gerador evita para cada limitação informada
 const EVITAR_POR_LIMITACAO = {
-  joelho: ['b2-afundo-reverso', 'cat-agachamento-bulgaro', 'b3-subida-degrau', 'b3-agachamento-smith', 'b2-agachamento-hack', 'cat-agachamento-livre'],
-  ombro: ['cat-triceps-mergulho-banco', 'a1-triceps-frances', 'a2-triceps-acima-cabeca-polia', 'a1-pullover-polia', 'cat-pullover-halter', 'a2-supino-reto-barra', 'cat-flexao-de-braco'],
-  lombar: ['b-terra-romeno-barra', 'cat-stiff-halteres', 'cat-remada-curvada-barra', 'b3-agachamento-smith', 'b1-agachamento-goblet', 'cat-agachamento-livre'],
+  joelho: ['b2-afundo-reverso', 'cat-agachamento-bulgaro', 'b3-subida-degrau', 'b3-agachamento-smith', 'b2-agachamento-hack', 'cat-agachamento-livre',
+    'x-agachamento-salto', 'x-bulgaro-peso-corporal', 'x-avanco-halteres', 'x-avanco-peso-corporal', 'x-nordic-assistido', 'x-agachamento-frontal', 'x-burpee'],
+  ombro: ['cat-triceps-mergulho-banco', 'a1-triceps-frances', 'a2-triceps-acima-cabeca-polia', 'a1-pullover-polia', 'cat-pullover-halter', 'a2-supino-reto-barra', 'cat-flexao-de-braco',
+    'x-mergulho-paralelas', 'x-mergulho-paralelas-triceps', 'x-flexao-pike', 'x-desenvolvimento-barra', 'x-remada-alta', 'x-flexao-declinada', 'x-thruster-halteres'],
+  lombar: ['b-terra-romeno-barra', 'cat-stiff-halteres', 'cat-remada-curvada-barra', 'b3-agachamento-smith', 'b1-agachamento-goblet', 'cat-agachamento-livre',
+    'x-terra-convencional', 'x-good-morning', 'x-swing-kettlebell', 'x-roda-abdominal', 'x-abdominal-canivete', 'x-extensao-lombar-banco', 'x-agachamento-frontal'],
 };
 
 // Padrões de movimento (os mesmos do catálogo)
@@ -132,6 +135,7 @@ function complementosDisponiveis() {
     for (const c of t.core || []) add('core', c);
     for (const c of t.mobilidade) add(inf ? 'mobInf' : 'mobSup', c);
   }
+  for (const [pool, lista] of Object.entries(COMPLEMENTOS_EXTRA)) for (const c of lista) add(pool, c); // exercicios.js
   if (!pools.prepInf.length) pools.prepInf = pools.mobInf.slice(0, 2); // preparação de pernas: mobilidade leve
   return pools;
 }
@@ -301,9 +305,8 @@ function telaCriar() {
   if (assist.passo === 0) {
     return `${criandoParaAluno ? `<a href="#/aluno/${criandoParaAluno}" class="small">‹ ${esc(nomeDe(criandoParaAluno))}</a>` : '<a href="#/treinos" class="small">‹ Treinos</a>'}<h1>Novo programa</h1>
       <p class="muted small">${criandoParaAluno ? `Programa para <b>${esc(nomeDe(criandoParaAluno))}</b>. Ele só recebe quando você tocar em Enviar.` : 'Escolha como quer criar o seu treino.'}</p>
-      <button class="escolha-grande" data-acao="cr-iniciar"><b>Criar com o assistente</b><span>Responda algumas perguntas e o app gera as fichas, ou monte você mesmo pelo catálogo.</span></button>
-      <a class="escolha-grande" href="#/importar"><b>Importar um treino pronto</b><span>Envie o PDF da ficha (ou cole o texto) que o app reconhece os exercícios.</span></a>
-      <button class="escolha-grande" data-acao="cr-modelo"><b>Usar o modelo AB</b><span>6 fichas em circuito (superiores e inferiores), com vídeos, para 6 dias por semana.</span></button>`;
+      ${opcoesNovoPrograma()}
+      ${ehAdmin() ? '<button class="escolha-grande" data-acao="cr-modelo"><b>Usar o modelo AB</b><span>Modelo de referência do administrador: 6 fichas em circuito, com vídeos.</span></button>' : ''}`;
   }
   const i = assist.passo - 1, passo = PASSOS[i];
   return `<div class="linha entre"><button class="link-btn" style="width:auto;padding:0" data-acao="cr-voltar">‹ Voltar</button>
@@ -312,6 +315,16 @@ function telaCriar() {
     <h1 style="font-size:22px">${esc(passo.titulo)}</h1>
     <div class="assistente">${passo.html(assist.r)}</div>
     ${i < PASSOS.length - 1 ? '<div class="barra-fixa"><button class="btn" data-acao="cr-avancar">Continuar</button></div>' : ''}`;
+}
+
+// As três formas de começar um programa (tela Hoje sem programa e tela Novo programa)
+function opcoesNovoPrograma() {
+  return `<button class="escolha-grande com-icone" data-acao="cr-iniciar"><i aria-hidden="true">✨</i><span><b>Criar com o assistente</b>
+      <span>Responda poucas perguntas (objetivo, dias, equipamentos) e o app monta tudo para você.</span></span></button>
+    <a class="escolha-grande com-icone" href="#/montar"><i aria-hidden="true">🧩</i><span><b>Criar sozinho</b>
+      <span>Escolha os treinos, os dias e os exercícios do catálogo, do seu jeito. Sem questionário.</span></span></a>
+    <a class="escolha-grande com-icone" href="#/importar"><i aria-hidden="true">📄</i><span><b>Importar um treino pronto</b>
+      <span>Tem a ficha em PDF (ou em texto)? O app reconhece os exercícios.</span></span></a>`;
 }
 
 function criarEAbrir(p) {
@@ -326,7 +339,7 @@ document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-acao]');
   if (!el || !el.dataset.acao.startsWith('cr-')) return;
   const acao = el.dataset.acao, r = assist.r;
-  if (acao === 'cr-iniciar') { assist.passo = 1; render(); }
+  if (acao === 'cr-iniciar') { assist.passo = 1; if (location.hash !== '#/criar') location.hash = '#/criar'; else render(); }
   else if (acao === 'cr-voltar') { assist.passo = Math.max(0, assist.passo - 1); render(); }
   else if (acao === 'cr-avancar') {
     if (PASSOS[assist.passo - 1].titulo.startsWith('Onde') && !r.equip.length) return toast('Marque pelo menos um equipamento');

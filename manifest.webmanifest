@@ -1,6 +1,6 @@
 {
-  "name": "Meu Treino",
-  "short_name": "Meu Treino",
+  "name": "Já treinô?",
+  "short_name": "Já treinô?",
   "lang": "pt-BR",
   "start_url": "./#/hoje",
   "scope": "./",

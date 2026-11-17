@@ -1,4 +1,4 @@
--- Meu Treino: perfis (aluno, professor, administrador), vínculos, convites, prescrições e mensagens.
+-- Já treinô?: perfis (aluno, professor, administrador), vínculos, convites, prescrições e mensagens.
 -- Cole no Supabase: SQL Editor -> New query -> Run. Pode rodar de novo sem problema.
 -- Depois, rode a última parte (no fim do arquivo) com o seu e-mail para virar administrador.
 

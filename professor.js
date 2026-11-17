@@ -120,8 +120,8 @@ function telaConvidar() {
 }
 async function compartilharConvite(codigo, nome) {
   const link = linkConvite(codigo);
-  const texto = `Olá${nome ? `, ${nome.split(' ')[0]}` : ''}! Vou acompanhar seus treinos pelo app Meu Treino. Abra este link para aceitar: ${link}`;
-  if (navigator.share) { try { await navigator.share({ title: 'Convite Meu Treino', text: texto }); return; } catch (e) { if (e.name === 'AbortError') return; } }
+  const texto = `Olá${nome ? `, ${nome.split(' ')[0]}` : ''}! Vou acompanhar seus treinos pelo app Já treinô? Abra este link para aceitar: ${link}`;
+  if (navigator.share) { try { await navigator.share({ title: 'Convite Já treinô?', text: texto }); return; } catch (e) { if (e.name === 'AbortError') return; } }
   try { await navigator.clipboard.writeText(link); toast('Link copiado'); } catch (e) { prompt('Copie o link do convite:', link); }
 }
 

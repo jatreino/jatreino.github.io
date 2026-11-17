@@ -790,7 +790,7 @@ function cartaoPerfil() {
 }
 
 // Versão publicada (mostrada em Ajustes, para conferir se o celular já carregou a atualização)
-const VERSAO_APP = '2026.11.17b';
+const VERSAO_APP = '2026.11.17c';
 async function buscarAtualizacao() {
   toast('Buscando atualização...');
   try {
@@ -821,11 +821,11 @@ function telaAjustes() {
 }
 
 async function exportar() {
-  const nome = `meu-treino-backup-${isoDia()}.json`;
+  const nome = `ja-treino-backup-${isoDia()}.json`;
   const blob = new Blob([JSON.stringify({ ...db, exportadoEm: new Date().toISOString() }, null, 2)], { type: 'application/json' });
   const arq = new File([blob], nome, { type: 'application/json' });
   if (navigator.canShare && navigator.canShare({ files: [arq] })) {
-    try { await navigator.share({ files: [arq], title: 'Backup Meu Treino' }); return; }
+    try { await navigator.share({ files: [arq], title: 'Backup Já treinô?' }); return; }
     catch (e) { if (e.name === 'AbortError') return; }
   }
   const url = URL.createObjectURL(blob);

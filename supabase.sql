@@ -1,4 +1,4 @@
--- Meu Treino: tabela de dados por usuário, com Row Level Security.
+-- Já treinô?: tabela de dados por usuário, com Row Level Security.
 -- Cole no Supabase: SQL Editor -> New query -> Run.
 
 create table if not exists public.dados_app (

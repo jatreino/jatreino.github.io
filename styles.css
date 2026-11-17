@@ -416,3 +416,10 @@ input[type="date"].input-texto::-webkit-calendar-picker-indicator { margin-left:
 .hoje-logo { display: block; width: min(200px, 60vw); height: auto; margin-left: -12px; } /* o arquivo tem margem interna */
 :root[data-tema="escuro"] .hoje-logo { padding: 2px 4px; margin-left: 0; border-radius: var(--r-md, 12px); }
 @media (prefers-color-scheme: dark) { :root[data-tema="auto"] .hoje-logo { padding: 2px 4px; margin-left: 0; border-radius: var(--r-md, 12px); } }
+
+/* ---------- Conta e páginas legais ---------- */
+.links-legais { text-align: center; color: var(--muted); margin: 14px 0 0; }
+.links-legais a, .link-perigo { color: var(--muted); }
+.link-perigo { color: var(--danger); }
+.lista-exclusao { margin: 6px 0 10px; padding-left: 20px; }
+.lista-exclusao li { margin: 3px 0; }

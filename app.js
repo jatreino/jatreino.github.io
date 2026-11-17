@@ -351,6 +351,7 @@ const telas = {
   alunos: telaAlunos, convidar: telaConvidar, aluno: telaAluno, enviar: telaEnviar, // professor.js
   admin: telaAdmin, // admin.js
   feedback: telaFeedback, // feedback.js
+  'excluir-conta': telaExcluirConta, // conta.js
 };
 
 let ultimaPag = null;
@@ -369,7 +370,7 @@ function render() {
     treino: 'hoje', finalizar: 'hoje', registrar: 'hoje', sessao: 'historico', exercicio: 'progresso',
     ficha: 'treinos', 'editar-ex': 'treinos', 'editar-bloco': 'treinos', 'editar-textos': 'treinos', 'editar-comp': 'treinos',
     catalogo: 'treinos', escolher: 'treinos', trocar: rotaAtual().arg === 'sessao' ? 'hoje' : 'treinos',
-    criar: 'treinos', programa: 'treinos', importar: 'treinos', convite: 'hoje', ajustes: 'ajustes', feedback: 'ajustes',
+    criar: 'treinos', programa: 'treinos', importar: 'treinos', convite: 'hoje', ajustes: 'ajustes', feedback: 'ajustes', 'excluir-conta': 'ajustes',
     mensagens: ehProfessor() ? 'alunos' : 'hoje', conversa: ehProfessor() ? 'alunos' : 'hoje',
     convidar: 'alunos', aluno: ehAdmin() && !ehProfessor() ? 'ajustes' : 'alunos', enviar: 'alunos', admin: ehProfessor() ? 'alunos' : 'ajustes', 'trocar-comp': rotaAtual().arg === 'sessao' ? 'hoje' : 'treinos',
   }[pag] || pag;
@@ -830,7 +831,7 @@ function cartaoPerfil() {
 }
 
 // Versão publicada (mostrada em Ajustes, para conferir se o celular já carregou a atualização)
-const VERSAO_APP = '2026.11.17p';
+const VERSAO_APP = '2026.11.17q';
 async function buscarAtualizacao() {
   toast('Buscando atualização...');
   try {
@@ -887,7 +888,8 @@ function telaAjustes(secao) {
 }
 
 function telaAjustesConta() {
-  return cartaoConta() + cartaoBiometria();
+  return cartaoConta() + cartaoBiometria()
+    + (contaAtual?.servidor ? '<p class="small" style="text-align:center;margin-top:18px"><a href="#/excluir-conta" class="link-perigo">Excluir minha conta</a></p>' : '');
 }
 function telaAjustesTreino() {
   return `<div class="card"><div class="linha entre"><div class="cresce"><b>Manter tela ligada</b><p class="muted small">Durante o treino a tela não apaga sozinha.</p></div>
@@ -911,7 +913,11 @@ function telaAjustesSobre() {
       <button class="btn-mini" data-acao="atualizar">Buscar atualização</button></div></div>
     <div class="card small"><p style="margin-top:0">O <b>Já treinô?</b> está em <b>fase de testes</b>: pode haver falhas e mudanças frequentes.</p>
       <p class="muted">As sugestões de treino não substituem a orientação de um profissional de educação física.</p>
-      <a class="btn sec" href="#/feedback">Enviar comentário ou relatar problema</a></div>`;
+      <a class="btn sec" href="#/feedback">Enviar comentário ou relatar problema</a></div>
+    <div class="card small"><b>Documentos</b>
+      <p style="margin:6px 0 0"><a href="${LINKS_LEGAIS.privacidade}" target="_blank" rel="noopener">Política de Privacidade</a></p>
+      <p style="margin:6px 0 0"><a href="${LINKS_LEGAIS.suporte}" target="_blank" rel="noopener">Suporte e perguntas frequentes</a></p>
+      <p style="margin:6px 0 0"><a href="${LINKS_LEGAIS.excluir}" target="_blank" rel="noopener">Como excluir sua conta e seus dados</a></p></div>`;
 }
 
 async function exportar() {

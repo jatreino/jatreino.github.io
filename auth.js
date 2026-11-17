@@ -175,7 +175,7 @@ function telaLogin() {
       <button type="button" class="link-btn" data-acao="login-modo" data-modo="redefinir">Esqueci minha senha</button>
     </form>
     <div class="card small">Ainda não tem conta?
-      <button class="btn sec" data-acao="login-modo" data-modo="criar">Criar conta</button></div></div>`;
+      <button class="btn sec" data-acao="login-modo" data-modo="criar">Criar conta</button></div>${linksLegais()}</div>`;
 }
 
 function erroLogin(msg) {

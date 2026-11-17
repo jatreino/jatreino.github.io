@@ -61,7 +61,10 @@ function barrasH(itens, fmt = (v) => v) {
 function telaRelatorios() {
   const desde = inicioPeriodo(periodoRel);
   const lista = sessoesOrdenadas().filter((s) => s.data >= desde);
-  let h = `<h1>Relatórios</h1><div class="chips">${PERIODOS.map(([v, t]) =>
+  // Para quem tem a aba Alunos no lugar de Progresso, o atalho fica aqui
+  const atalho = typeof ehProfessor === 'function' && ehProfessor() && !somenteLeitura
+    ? '<a class="card atalho-progresso" href="#/progresso"><span>📈 <b>Progresso</b> <span class="muted small">cargas, peso e medidas</span></span><span class="seta">›</span></a>' : '';
+  let h = `<h1>Relatórios</h1>${atalho}<div class="chips">${PERIODOS.map(([v, t]) =>
     `<a href="#/relatorios" data-acao="rel-periodo" data-p="${v}" class="${v === periodoRel ? 'sel' : ''}">${t}</a>`).join('')}</div>`;
 
   if (!pesoEm()) {

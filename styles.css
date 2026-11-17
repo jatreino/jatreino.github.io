@@ -407,3 +407,6 @@ input[type="date"].input-texto::-webkit-calendar-picker-indicator { margin-left:
 .segmento { display: grid; grid-template-columns: 1fr 1fr; background: var(--card2); border: 1px solid var(--line); border-radius: 12px; padding: 3px; margin: 4px 0 14px; }
 .segmento a { text-align: center; padding: 8px; border-radius: 9px; color: var(--muted); font-weight: 600; text-decoration: none; }
 .segmento a.sel { background: var(--card); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.input-texto.do-pdf { border-color: var(--accent); background: var(--destaque-bg); }
+.atalho-progresso { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: inherit; text-decoration: none; }
+.atalho-progresso .seta { color: var(--muted); font-size: 22px; }

@@ -145,6 +145,7 @@ function telaFicha(f, args) {
       h += `<div class="ed-ex"><span class="num-ex">${i + 1}</span>
         <div class="cresce"><b class="small">${esc(c.nome)}</b><div class="muted small">${c.series || 1} × ${esc(c.dose || '')}${c.video ? ' · ▶ vídeo' : ''}</div></div>
         <div class="ed-acoes">
+          <button data-acao="ir" data-href="#/trocar-comp/${encodeURIComponent(f)}/${{ preparacao: 'prep', core: 'core', mobilidade: 'mob' }[campo]}/${i}" aria-label="Trocar por outro">⇄</button>
           <button data-acao="ed-comp-mover" data-f="${f}" data-campo="${campo}" data-i="${i}" data-dir="-1" ${i === 0 ? 'disabled' : ''} aria-label="Subir">↑</button>
           <button data-acao="ed-comp-mover" data-f="${f}" data-campo="${campo}" data-i="${i}" data-dir="1" ${i === lista.length - 1 ? 'disabled' : ''} aria-label="Descer">↓</button>
           <button data-acao="ir" data-href="#/editar-comp/${f}/${campo}/${i}" aria-label="Editar">✎</button>

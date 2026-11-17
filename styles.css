@@ -18,6 +18,8 @@
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+/* O atributo hidden precisa vencer display: flex/grid das classes (a barra de descanso não sumia ao tocar no ✕) */
+[hidden] { display: none !important; }
 html, body { margin: 0; background: var(--bg); color: var(--text); }
 body {
   font: 16px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
@@ -154,7 +156,8 @@ textarea, .input-texto { width: 100%; font: inherit; color: var(--text); backgro
 .link-btn { background: none; border: 0; color: var(--accent); font: inherit; font-size: 14px; padding: 10px 0 0; cursor: pointer; text-align: center; width: 100%; }
 .ed-ex { flex-wrap: wrap; }
 .ed-ex .ed-acoes { width: 100%; justify-content: flex-end; }
-.descanso .btn-fechar { min-width: 44px; min-height: 40px; font-size: 18px; }
+.descanso .btn-mini { min-height: 44px; }
+.descanso .btn-fechar { min-width: 48px; font-size: 20px; }
 
 /* Programas, assistente e importação */
 .prog-linha { display: flex; justify-content: space-between; align-items: center; gap: 8px; color: var(--text); text-decoration: none; font-size: 14px; padding: 4px 0; }

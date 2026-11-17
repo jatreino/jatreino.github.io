@@ -294,3 +294,76 @@ document.addEventListener('change', (e) => {
 });
 // Entrar numa tela do catálogo sempre começa sem seleção
 window.addEventListener('hashchange', () => { if (!/^#\/(catalogo|trocar|escolher)/.test(location.hash)) { catSel = null; } });
+
+// ---------- Exercícios complementares: trocar preparação, core e mobilidade ----------
+// As opções são os complementares das fichas (com vídeo), separados por categoria.
+const SECAO_COMP = { prep: 'preparacao', core: 'core', mob: 'mobilidade' };
+const NOME_COMP = { prep: 'preparação', core: 'core', mob: 'mobilidade' };
+function opcoesComplemento(g) {
+  const p = complementosDisponiveis(); // gerador.js
+  const lista = g === 'core' ? p.core : g === 'mob' ? [...p.mobSup, ...p.mobInf] : [...p.prepSup, ...p.prepInf];
+  return lista.filter((c, i) => lista.findIndex((x) => x.id === c.id) === i);
+}
+const compPorId = (id) => ['prep', 'core', 'mob'].flatMap(opcoesComplemento).find((c) => c.id === id) || null;
+
+// Lista da ficha já com as trocas feitas só para o treino de hoje (mantém as séries da ficha)
+function compsEfetivos(t, a, g) {
+  const trocas = (a && a.trocasComp) || {};
+  return (t[SECAO_COMP[g]] || []).map((c, i) => {
+    const novo = trocas[`${g}:${i}`] && compPorId(trocas[`${g}:${i}`]);
+    return novo ? { ...novo, series: c.series, noLugarDe: c.nome } : c;
+  });
+}
+
+let compSel = null;
+// #/trocar-comp/sessao/<g>/<i>   durante o treino
+// #/trocar-comp/<ficha>/<g>/<i>  no editor da ficha (programa ativo)
+function telaTrocarComp(_, args) {
+  const [onde, g, iTxt] = args, i = +iTxt, sessao = onde === 'sessao';
+  const a = db.ativa;
+  const f = sessao ? a?.treino : onde;
+  const t = f && fichaDe(f);
+  const atual = t && (sessao ? compsEfetivos(t, a, g) : t[SECAO_COMP[g]] || [])[i];
+  if (!atual) return `<div class="vazio">Exercício não encontrado.<a class="btn sec" href="#/hoje">Voltar</a></div>`;
+  const voltar = sessao ? '#/treino' : `#/ficha/${encodeURIComponent(f)}/editar`;
+  const opcoes = opcoesComplemento(g).filter((c) => c.id !== atual.id);
+  return `<a href="${voltar}" class="small">‹ Voltar</a><h1>Trocar exercício</h1>
+    <div class="card destaque small">Trocando <b>${esc(atual.nome)}</b> (${esc(NOME_COMP[g])}). O novo exercício mantém ${atual.series || 1} série(s).</div>
+    <div class="card">${opcoes.map((c) => `<div class="cat-item ${compSel === c.id ? 'sel' : ''}" data-acao="cat-comp-sel" data-id="${c.id}">
+      <div class="linha entre"><b class="small">${esc(c.nome)}</b><span class="small muted">${esc(c.dose || '')}</span></div>
+      ${compSel === c.id ? `<div class="cat-detalhe">${videoExercicio(c)}<p class="small muted">${esc(c.dica || '')}</p></div>` : ''}</div>`).join('')}</div>
+    ${!sessao ? `<a class="btn sec" href="#/editar-comp/${encodeURIComponent(f)}/${SECAO_COMP[g]}/${i}">Editar ou criar um exercício personalizado</a>` : ''}
+    ${compSel && opcoes.some((c) => c.id === compSel) ? `<div class="barra-fixa">
+      ${sessao ? `<button class="btn sec" data-acao="cat-comp-trocar" data-onde="ficha" data-ctx="${esc(args.join('/'))}">Trocar também na ficha</button>
+        <button class="btn" data-acao="cat-comp-trocar" data-onde="hoje" data-ctx="${esc(args.join('/'))}">Trocar só hoje</button>`
+        : `<button class="btn" data-acao="cat-comp-trocar" data-onde="ficha" data-ctx="${esc(args.join('/'))}">Trocar na ficha</button>`}
+    </div>` : ''}`;
+}
+
+function aplicarTrocaComp(ctx, onde) {
+  const [modo, g, iTxt] = ctx.split('/'), i = +iTxt, sessao = modo === 'sessao';
+  const novo = compPorId(compSel);
+  const a = db.ativa;
+  const f = sessao ? a.treino : modo;
+  if (!novo || !fichaDe(f)) return;
+  const slot = fichaDe(f)[SECAO_COMP[g]][i];
+  if (onde === 'hoje') {
+    a.trocasComp ??= {};
+    a.trocasComp[`${g}:${i}`] = novo.id;
+  } else {
+    editavel(f)[SECAO_COMP[g]][i] = { ...structuredClone(novo), series: slot.series };
+    if (a && a.treino === f && a.trocasComp) delete a.trocasComp[`${g}:${i}`];
+  }
+  compSel = null;
+  salvar();
+  toast(onde === 'hoje' ? `Trocado só neste treino: ${novo.nome}` : `Ficha atualizada: ${novo.nome}`);
+  location.hash = sessao ? '#/treino' : `#/ficha/${encodeURIComponent(f)}/editar`;
+}
+
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-acao]');
+  if (!el) return;
+  if (el.dataset.acao === 'cat-comp-sel') { compSel = compSel === el.dataset.id ? null : el.dataset.id; render(); }
+  else if (el.dataset.acao === 'cat-comp-trocar') aplicarTrocaComp(el.dataset.ctx, el.dataset.onde);
+});
+window.addEventListener('hashchange', () => { if (!location.hash.startsWith('#/trocar-comp')) compSel = null; });

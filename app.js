@@ -312,7 +312,7 @@ const telas = {
   progresso: telaProgresso, exercicio: telaExercicio, ajustes: telaAjustes,
   treinos: telaTreinos, ficha: telaFicha, 'editar-ex': telaEditarEx, 'editar-bloco': telaEditarBloco, 'editar-textos': telaEditarTextos,
   'editar-comp': telaEditarComp, catalogo: telaCatalogo, trocar: telaTrocar, escolher: telaEscolher,
-  criar: telaCriar, programa: telaPrograma, importar: telaImportar,
+  criar: telaCriar, programa: telaPrograma, importar: telaImportar, 'trocar-comp': telaTrocarComp,
   relatorios: telaRelatorios,
 };
 
@@ -331,7 +331,7 @@ function render() {
     treino: 'hoje', finalizar: 'hoje', registrar: 'hoje', sessao: 'historico', exercicio: 'progresso',
     ficha: 'treinos', 'editar-ex': 'treinos', 'editar-bloco': 'treinos', 'editar-textos': 'treinos', 'editar-comp': 'treinos',
     catalogo: 'treinos', escolher: 'treinos', trocar: rotaAtual().arg === 'sessao' ? 'hoje' : 'treinos',
-    criar: 'treinos', programa: 'treinos', importar: 'treinos',
+    criar: 'treinos', programa: 'treinos', importar: 'treinos', 'trocar-comp': rotaAtual().arg === 'sessao' ? 'hoje' : 'treinos',
   }[pag] || pag;
   document.querySelectorAll('#nav a').forEach((a) => a.classList.toggle('sel', a.dataset.tab === aba));
   tick();
@@ -456,6 +456,8 @@ function abrirVideo(el) {
 function cartaoComplementar(g, c, i, marcas) {
   return `<div class="ex">
     <div class="linha entre"><div class="ex-nome">${esc(c.nome)}</div><span class="small muted">${c.series || 1} × ${esc(c.dose || '')}</span></div>
+    ${marcas ? `<div class="linha entre">${c.noLugarDe ? `<p class="small muted">No lugar de: ${esc(c.noLugarDe)} (só neste treino)</p>` : '<span></span>'}
+      <a class="btn-mini trocar" href="#/trocar-comp/sessao/${g}/${i}" aria-label="Trocar exercício">⇄ Trocar</a></div>` : ''}
     ${videoExercicio(c)}
     ${c.dica ? `<details><summary>Dica de execução ▾</summary><p>${esc(c.dica)}</p></details>` : ''}
     ${marcas ? `<div class="comp-series">${marcas.map((on, s) => `<button class="comp-serie ${on ? 'feita' : ''}" data-acao="comp-serie"
@@ -492,7 +494,7 @@ function telaTreino() {
   h += `<div class="card"><details><summary class="small muted">Como executar ▾</summary><p class="small muted">${esc(t.instrucoes)}</p></details></div>`;
 
   if (t.cardioInicial) h += `<div class="card"><h2>${esc(t.cardioInicial.titulo)}</h2>${checkItem('cardioIni', 0, t.cardioInicial.texto, a.checks.cardioIni)}</div>`;
-  h += cartaoSecaoComp(t.tituloPreparacao || 'Preparação', 'prep', t.preparacao, a.checks.prep, t.avisos);
+  h += cartaoSecaoComp(t.tituloPreparacao || 'Preparação', 'prep', compsEfetivos(t, a, 'prep'), a.checks.prep, t.avisos);
 
   let n = 0;
   blocosEfetivos(t, a).forEach((b, bi) => {
@@ -536,8 +538,8 @@ function telaTreino() {
     h += `</div>`;
   });
 
-  h += cartaoSecaoComp('Core', 'core', t.core || [], a.checks.core);
-  h += cartaoSecaoComp(t.tituloMobilidade || 'Mobilidade', 'mob', t.mobilidade, a.checks.mob);
+  h += cartaoSecaoComp('Core', 'core', compsEfetivos(t, a, 'core'), a.checks.core);
+  h += cartaoSecaoComp(t.tituloMobilidade || 'Mobilidade', 'mob', compsEfetivos(t, a, 'mob'), a.checks.mob);
   if (t.cardioFinal) h += `<div class="card"><h2>${esc(t.cardioFinal.titulo)}</h2><p class="small muted">${esc(t.cardioFinal.texto)}</p><p class="small muted">Você marca se fez ao finalizar.</p></div>`;
   h += `<a class="btn" href="#/finalizar">Finalizar treino</a>
     <button class="btn perigo" data-acao="descartar">Descartar treino</button>`;
@@ -780,6 +782,17 @@ function cartaoPerfil() {
   </div>`;
 }
 
+// Versão publicada (mostrada em Ajustes, para conferir se o celular já carregou a atualização)
+const VERSAO_APP = '2026.11.17';
+async function buscarAtualizacao() {
+  toast('Buscando atualização...');
+  try {
+    const reg = await navigator.serviceWorker?.getRegistration();
+    if (reg) await reg.update();
+  } catch (e) { /* sem service worker: o recarregamento já busca os arquivos novos */ }
+  setTimeout(() => location.reload(), 800);
+}
+
 function telaAjustes() {
   return `<h1>Ajustes</h1>
     ${cartaoConta()}
@@ -794,7 +807,9 @@ function telaAjustes() {
       <p class="small">${esc(programaAtivo().nome)}: ${fichasIds().map(esc).join(' → ')} → ${esc(fichasIds()[0])}</p>
       <p class="muted small">Não há dia fixo: o app sugere a ficha seguinte à última feita, mas você escolhe qualquer uma, em qualquer dia, inclusive domingo.</p></div>` : ''}
     <div class="card"><p class="muted small">${db.sessoes.length} treinos salvos.</p>
-      <button class="btn perigo" data-acao="apagar-tudo">Apagar todos os dados</button></div>`;
+      <button class="btn perigo" data-acao="apagar-tudo">Apagar todos os dados</button></div>
+    <div class="card"><div class="linha entre"><div><b>Versão do app</b><p class="muted small">${VERSAO_APP}</p></div>
+      <button class="btn-mini" data-acao="atualizar">Buscar atualização</button></div></div>`;
 }
 
 async function exportar() {
@@ -825,6 +840,57 @@ function importar(input) {
     salvar(); toast('Backup importado'); render();
   }).catch(() => toast('Arquivo de backup inválido'));
   input.value = '';
+}
+
+// ---------- Conclusão de séries ----------
+// Conclui (ok = true) ou desfaz uma série. Ao concluir, copia a carga para a próxima série e inicia o
+// descanso: nos blocos em voltas, só quando o último exercício da volta é concluído; nos blocos de
+// séries tradicionais, após cada série. Chamado pelo botão ✓ e ao terminar de digitar as repetições.
+function marcarSerie(linha, ok, { automatico = false } = {}) {
+  const a = db.ativa;
+  const exId = linha.dataset.ex, i = +linha.dataset.i;
+  const s = a.series[exId][i];
+  const blocos = blocosEfetivos(fichaDe(a.treino), a);
+  const bloco = blocos.find((b) => b.exercicios.some((x) => x.id === exId));
+  const ex = bloco.exercicios.find((x) => x.id === exId);
+  if (ok) {
+    const preenchido = (c) => (c === 'kg' && ex.carga === 'elastico' ? String(s.kg).trim() !== '' : num(s[c]) !== null);
+    const vazio = (SEM_CARGA(ex) ? ['reps'] : ['kg', 'reps']).find((c) => !preenchido(c));
+    if (vazio) {
+      const inp = $(`[data-campo="${vazio}"]`, linha);
+      inp.classList.remove('erro'); void inp.offsetWidth; inp.classList.add('erro');
+      if (!automatico) inp.focus();
+      toast(vazio === 'kg' ? (ex.carga === 'elastico' ? 'Informe o elástico' : 'Informe a carga') : 'Informe as repetições');
+      return false;
+    }
+  }
+  if (s.ok === ok) return true;
+  s.ok = ok;
+  linha.classList.toggle('feita', ok);
+  if (!automatico && document.activeElement) document.activeElement.blur();
+  // Se a próxima série ainda não tem carga, copia a desta
+  const prox = a.series[exId][i + 1];
+  if (ok && !SEM_CARGA(ex) && prox && !prox.ok && !String(prox.kg).trim()) {
+    prox.kg = s.kg;
+    const inp = $(`.serie[data-ex="${exId}"][data-i="${i + 1}"] [data-campo="kg"]`);
+    if (inp) inp.value = s.kg;
+  }
+  if (ok) {
+    const ultimoBloco = bloco === blocos[blocos.length - 1];
+    if (bloco.modo === 'series') {
+      const ultimoEx = ex === bloco.exercicios[bloco.exercicios.length - 1];
+      const ultimaSerie = i === bloco.voltas - 1;
+      if (!(ultimoBloco && ultimoEx && ultimaSerie)) {
+        iniciarDescanso(bloco, ultimaSerie ? 'Próximo exercício' : `${ex.nome} · série ${i + 2}`);
+      } else { a.descanso = null; tick(); }
+    } else if (bloco.exercicios.every((x) => a.series[x.id][i].ok)) {
+      if (!(ultimoBloco && i === bloco.voltas - 1)) {
+        iniciarDescanso(bloco, `${bloco.nome} · ${i === bloco.voltas - 1 ? 'próximo bloco' : `volta ${i + 2}`}`);
+      } else { a.descanso = null; tick(); }
+    }
+  }
+  salvar(); atualizarContador();
+  return true;
 }
 
 // ---------- Eventos ----------
@@ -860,47 +926,8 @@ document.addEventListener('click', (e) => {
 
   else if (acao === 'serie') {
     const linha = el.closest('.serie');
-    const exId = linha.dataset.ex, i = +linha.dataset.i;
-    const s = a.series[exId][i];
-    const blocos = blocosEfetivos(fichaDe(a.treino), a);
-    const bloco = blocos.find((b) => b.exercicios.some((x) => x.id === exId));
-    const ex = bloco.exercicios.find((x) => x.id === exId);
-    if (!s.ok) {
-      const preenchido = (c) => (c === 'kg' && ex.carga === 'elastico' ? String(s.kg).trim() !== '' : num(s[c]) !== null);
-      const vazio = (SEM_CARGA(ex) ? ['reps'] : ['kg', 'reps']).find((c) => !preenchido(c));
-      if (vazio) {
-        const inp = $(`[data-campo="${vazio}"]`, linha);
-        inp.classList.remove('erro'); void inp.offsetWidth; inp.classList.add('erro'); inp.focus();
-        return toast(vazio === 'kg' ? (ex.carga === 'elastico' ? 'Informe o elástico' : 'Informe a carga') : 'Informe as repetições');
-      }
-    }
-    s.ok = !s.ok;
-    linha.classList.toggle('feita', s.ok);
-    if (document.activeElement) document.activeElement.blur();
-    // Se a próxima série ainda não tem carga, copia a desta
-    const prox = a.series[exId][i + 1];
-    if (s.ok && !SEM_CARGA(ex) && prox && !prox.ok && !String(prox.kg).trim()) {
-      prox.kg = s.kg;
-      const inp = $(`.serie[data-ex="${exId}"][data-i="${i + 1}"] [data-campo="kg"]`);
-      if (inp) inp.value = s.kg;
-    }
-    if (s.ok) {
-      const ultimoBloco = bloco === blocos[blocos.length - 1];
-      if (bloco.modo === 'series') {
-        // Séries tradicionais: descansa após cada série, menos depois da última série do treino
-        const ultimoEx = ex === bloco.exercicios[bloco.exercicios.length - 1];
-        const ultimaSerie = i === bloco.voltas - 1;
-        if (!(ultimoBloco && ultimoEx && ultimaSerie)) {
-          iniciarDescanso(bloco, ultimaSerie ? 'Próximo exercício' : `${ex.nome} · série ${i + 2}`);
-        } else { a.descanso = null; tick(); }
-      } else if (bloco.exercicios.every((x) => a.series[x.id][i].ok)) {
-        // Voltas: descansa quando todos os exercícios do bloco fecham a volta
-        if (!(ultimoBloco && i === bloco.voltas - 1)) {
-          iniciarDescanso(bloco, `${bloco.nome} · ${i === bloco.voltas - 1 ? 'próximo bloco' : `volta ${i + 2}`}`);
-        } else { a.descanso = null; tick(); }
-      }
-    }
-    salvar(); atualizarContador();
+    const st = a.series[linha.dataset.ex][+linha.dataset.i];
+    marcarSerie(linha, !st.ok);
   }
 
   else if (acao === 'descanso-mais') { a.descanso.min += 15; a.descanso.max += 15; avisos.min = avisos.max = false; salvar(); tick(); }
@@ -934,6 +961,7 @@ document.addEventListener('click', (e) => {
   }
   else if (acao === 'tela') { db.config.telaLigada = !db.config.telaLigada; salvar(); render(); }
   else if (acao === 'exportar') exportar();
+  else if (acao === 'atualizar') buscarAtualizacao();
   else if (acao === 'apagar-tudo') {
     if (confirm('Apagar TODOS os treinos e registros deste celular?') && confirm('Tem certeza? Faça um backup antes, se quiser guardar.')) {
       db = novoDb(); salvar(); render(); toast('Dados apagados');
@@ -960,6 +988,11 @@ document.addEventListener('input', (e) => {
 
 document.addEventListener('change', (e) => {
   if (e.target.dataset.acao === 'importar') importar(e.target);
+  // Ao terminar de digitar as repetições (OK do teclado ou tocar fora), a série é concluída
+  if (e.target.dataset.campo === 'reps' && db.ativa && num(e.target.value) !== null) {
+    const linha = e.target.closest('.serie');
+    if (linha && !db.ativa.series[linha.dataset.ex][+linha.dataset.i].ok) marcarSerie(linha, true, { automatico: true });
+  }
   if (e.target.dataset.perfil) {
     db.perfil[e.target.dataset.perfil] = e.target.value.trim();
     salvar(); render();

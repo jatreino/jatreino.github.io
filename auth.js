@@ -118,6 +118,7 @@ function traduzErro(error) {
   if (/Invalid login credentials/i.test(m)) return 'E-mail ou senha incorretos.';
   if (/Email not confirmed/i.test(m)) return 'Confirme seu e-mail pelo link que enviamos (veja também a caixa de spam).';
   if (/already registered|already been registered/i.test(m)) return 'Já existe uma conta com esse e-mail. Use "Entrar" ou "Esqueci minha senha".';
+  if (/Error sending|sending (recovery|confirmation|invite|magic link) email|smtp/i.test(m)) return 'Não foi possível enviar o e-mail agora. Tente de novo em alguns minutos; se continuar, fale com o suporte.';
   if (/rate limit|too many/i.test(m)) return 'Muitas tentativas ou e-mails seguidos. Aguarde alguns minutos e tente de novo.';
   if (/Password should be|weak/i.test(m)) return 'Senha fraca: use pelo menos 6 caracteres.';
   if (/fetch|network|Failed to/i.test(m)) return 'Sem conexão com o servidor. Verifique a internet.';

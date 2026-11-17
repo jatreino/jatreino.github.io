@@ -45,8 +45,9 @@ const ROTULOS = new Set([...GRUPOS.flatMap((g) => tokens(g)), 'terra', 'quadrice
 
 // ---------- Leitura do PDF ----------
 async function textoDoPdf(arquivo) {
+  await import('./pdf-compat.mjs'); // Safari do iPhone: ver o arquivo
   const pdfjs = await import(`./${PDFJS}pdf.min.mjs`);
-  pdfjs.GlobalWorkerOptions.workerSrc = `${PDFJS}pdf.worker.min.mjs`;
+  pdfjs.GlobalWorkerOptions.workerSrc = 'pdf-worker.mjs';
   const doc = await pdfjs.getDocument({ data: await arquivo.arrayBuffer() }).promise;
   const linhas = [];
   for (let n = 1; n <= doc.numPages; n++) {

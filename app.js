@@ -385,7 +385,7 @@ function telaHoje() {
   const hoje = new Date();
   const iso = isoDia(hoje);
   const prog = programaAtivo();
-  let h = `<p class="muted">${fmtDataLonga(iso)}</p><h1>Hoje</h1>${cartaoFeedbackHoje()}${cartoesSociaisHoje()}${cartaoOfertaBiometria()}`;
+  let h = `<header class="hoje-topo"><img src="marca/logotipo_horizontal.svg" alt="Já treinô?" class="hoje-logo"></header><p class="muted">${fmtDataLonga(iso)}</p><h1>Hoje</h1>${cartaoFeedbackHoje()}${cartoesSociaisHoje()}${cartaoOfertaBiometria()}`;
   if (!prog) {
     return h + `<div class="card destaque"><h2>Vamos montar o seu treino</h2>
       <p class="muted small">Responda algumas perguntas para o app gerar as suas fichas, monte você mesmo pelo catálogo ou importe uma ficha pronta.</p>
@@ -830,7 +830,7 @@ function cartaoPerfil() {
 }
 
 // Versão publicada (mostrada em Ajustes, para conferir se o celular já carregou a atualização)
-const VERSAO_APP = '2026.11.17m';
+const VERSAO_APP = '2026.11.17n';
 async function buscarAtualizacao() {
   toast('Buscando atualização...');
   try {

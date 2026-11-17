@@ -98,8 +98,8 @@
 }
 /* No escuro o logotipo fica numa placa marfim: o halter e o "Já" são pretos e o manual não permite recolorir a marca */
 :root[data-tema="escuro"] .login-marca, :root[data-tema="auto"] .login-marca { display: inline-block; }
-:root[data-tema="escuro"] .login-logo { background: #FDF8F5; border-radius: var(--r-lg); padding: 10px 16px; box-sizing: content-box; }
-@media (prefers-color-scheme: dark) { :root[data-tema="auto"] .login-logo { background: #FDF8F5; border-radius: var(--r-lg); padding: 10px 16px; box-sizing: content-box; } }
+:root[data-tema="escuro"] .hoje-logo, :root[data-tema="escuro"] .login-logo { background: #FDF8F5; border-radius: var(--r-lg); padding: 10px 16px; box-sizing: content-box; }
+@media (prefers-color-scheme: dark) { :root[data-tema="auto"] .hoje-logo, :root[data-tema="auto"] .login-logo { background: #FDF8F5; border-radius: var(--r-lg); padding: 10px 16px; box-sizing: content-box; } }
 .login-tema { display: block; margin: 0 0 4px auto; }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -410,3 +410,9 @@ input[type="date"].input-texto::-webkit-calendar-picker-indicator { margin-left:
 .input-texto.do-pdf { border-color: var(--accent); background: var(--destaque-bg); }
 .atalho-progresso { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: inherit; text-decoration: none; }
 .atalho-progresso .seta { color: var(--muted); font-size: 22px; }
+
+/* ---------- Logo no topo da tela Hoje ---------- */
+.hoje-topo { margin: 0 0 10px; }
+.hoje-logo { display: block; width: min(200px, 60vw); height: auto; margin-left: -12px; } /* o arquivo tem margem interna */
+:root[data-tema="escuro"] .hoje-logo { padding: 2px 4px; margin-left: 0; border-radius: var(--r-md, 12px); }
+@media (prefers-color-scheme: dark) { :root[data-tema="auto"] .hoje-logo { padding: 2px 4px; margin-left: 0; border-radius: var(--r-md, 12px); } }

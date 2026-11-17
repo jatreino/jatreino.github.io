@@ -52,7 +52,7 @@ function telaAdmin() {
       <div class="stat"><b>${ativos}</b><span>ativos em 7 dias</span></div>
       <div class="stat"><b>${treinosSemana}</b><span>treinos em 7 dias</span></div>
       <div class="stat"><b>${contar('admin')}</b><span>administradores</span></div>
-    </div>`;
+    </div>${secaoFeedbackAdmin()}`;
   const profs = adm.perfis.filter((p) => ['professor', 'admin'].includes(p.papel));
   h += `<details class="card" ${adm.formAberto ? 'open' : ''} id="adm-novo"><summary class="linha entre"><b>+ Novo usuário</b><span class="seta">▾</span></summary>
     <div class="form">

@@ -350,6 +350,7 @@ const telas = {
   convite: telaConvite, mensagens: telaMensagens, conversa: telaConversa, // social.js
   alunos: telaAlunos, convidar: telaConvidar, aluno: telaAluno, enviar: telaEnviar, // professor.js
   admin: telaAdmin, // admin.js
+  feedback: telaFeedback, // feedback.js
 };
 
 let ultimaPag = null;
@@ -360,14 +361,14 @@ function render() {
   const fn = telas[pag] || telaHoje;
   const mesmaPag = pag === ultimaPag;
   const y = window.scrollY;
-  app.innerHTML = fn(arg, args);
+  app.innerHTML = fn(arg, args) + rodapeBeta(pag);
   window.scrollTo(0, mesmaPag ? y : 0);
   ultimaPag = pag;
   const aba = {
     treino: 'hoje', finalizar: 'hoje', registrar: 'hoje', sessao: 'historico', exercicio: 'progresso',
     ficha: 'treinos', 'editar-ex': 'treinos', 'editar-bloco': 'treinos', 'editar-textos': 'treinos', 'editar-comp': 'treinos',
     catalogo: 'treinos', escolher: 'treinos', trocar: rotaAtual().arg === 'sessao' ? 'hoje' : 'treinos',
-    criar: 'treinos', programa: 'treinos', importar: 'treinos', convite: 'hoje', ajustes: 'ajustes',
+    criar: 'treinos', programa: 'treinos', importar: 'treinos', convite: 'hoje', ajustes: 'ajustes', feedback: 'ajustes',
     mensagens: ehProfessor() ? 'alunos' : 'hoje', conversa: ehProfessor() ? 'alunos' : 'hoje',
     convidar: 'alunos', aluno: ehAdmin() && !ehProfessor() ? 'ajustes' : 'alunos', enviar: 'alunos', admin: ehProfessor() ? 'alunos' : 'ajustes', 'trocar-comp': rotaAtual().arg === 'sessao' ? 'hoje' : 'treinos',
   }[pag] || pag;
@@ -383,7 +384,7 @@ function telaHoje() {
   const hoje = new Date();
   const iso = isoDia(hoje);
   const prog = programaAtivo();
-  let h = `<p class="muted">${fmtDataLonga(iso)}</p><h1>Hoje</h1>${cartoesSociaisHoje()}${cartaoOfertaBiometria()}`;
+  let h = `<p class="muted">${fmtDataLonga(iso)}</p><h1>Hoje</h1>${cartaoFeedbackHoje()}${cartoesSociaisHoje()}${cartaoOfertaBiometria()}`;
   if (!prog) {
     return h + `<div class="card destaque"><h2>Vamos montar o seu treino</h2>
       <p class="muted small">Responda algumas perguntas para o app gerar as suas fichas, monte você mesmo pelo catálogo ou importe uma ficha pronta.</p>
@@ -823,7 +824,7 @@ function cartaoPerfil() {
 }
 
 // Versão publicada (mostrada em Ajustes, para conferir se o celular já carregou a atualização)
-const VERSAO_APP = '2026.11.17h';
+const VERSAO_APP = '2026.11.17i';
 async function buscarAtualizacao() {
   toast('Buscando atualização...');
   try {
@@ -836,6 +837,8 @@ async function buscarAtualizacao() {
 function telaAjustes() {
   return `<h1>Ajustes</h1>
     ${cartaoConta()}
+    <a class="card" href="#/feedback" style="display:block;color:inherit;text-decoration:none"><div class="linha entre"><div class="cresce"><b>Comentários e problemas ${seloBeta()}</b>
+      <p class="muted small" style="margin:4px 0 0">O app está em testes. Conte o que deu errado ou o que pode melhorar.</p></div><span class="seta">›</span></div></a>
     ${cartaoSocial()}
     ${cartaoPerfil()}
     ${cartaoBiometria()}
@@ -851,7 +854,7 @@ function telaAjustes() {
       <p class="muted small">Não há dia fixo: o app sugere a ficha seguinte à última feita, mas você escolhe qualquer uma, em qualquer dia, inclusive domingo.</p></div>` : ''}
     <div class="card"><p class="muted small">${db.sessoes.length} treinos salvos.</p>
       <button class="btn perigo" data-acao="apagar-tudo">Apagar todos os dados</button></div>
-    <div class="card"><div class="linha entre"><div><b>Versão do app</b><p class="muted small">${VERSAO_APP}</p></div>
+    <div class="card"><div class="linha entre"><div><b>Versão do app ${seloBeta()}</b><p class="muted small">${VERSAO_APP} · fase de testes</p></div>
       <button class="btn-mini" data-acao="atualizar">Buscar atualização</button></div></div>`;
 }
 

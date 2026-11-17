@@ -105,7 +105,7 @@ async function sair() {
   localStorage.removeItem(SESSAO_KEY);
   contaAtual = null;
   db = novoDb();
-  bio.lista = null;
+  bio.lista = null; fb.lista = null; fb.abertos = null;
   meuPerfil = null; social.disponivel = false; social.naoLidas = 0; social.prescricoes = []; social.professores = [];
   if (typeof prof !== 'undefined') { prof.alunos = null; prof.usuarios = {}; }
   modoLogin = 'entrar';
@@ -131,6 +131,7 @@ function telaLogin() {
     redefinir: 'Redefina a sua senha', 'nova-senha': boasVindas ? 'Bem-vindo! Crie a sua senha para começar' : 'Escolha a nova senha',
   }[modoLogin];
   const topo = `<div class="login-topo"><h1 class="login-marca"><img src="marca/logotipo_horizontal.svg" alt="Já treinô?" class="login-logo"></h1>
+    <p class="login-beta small">${seloBeta()} Versão de testes: pode haver falhas.</p>
     <p class="muted small">${subtitulo}</p></div>`;
   const erro = '<p class="login-erro small" id="login-erro" hidden></p>';
   const aviso = (avisoLogin ? `<div class="card destaque small">${esc(avisoLogin)}</div>` : '')

@@ -357,3 +357,14 @@ svg.grafico { display: block; width: 100%; height: auto; margin-top: 8px; }
 .stat span { font-size: 11px; color: var(--muted); }
 a.ficha { text-decoration: none; color: inherit; }
 .btn-mini.perigo { color: var(--danger); border-color: var(--danger); }
+
+/* ---------- BETA e comentários ---------- */
+.selo-beta { display: inline-block; vertical-align: middle; font-size: 11px; font-weight: 800; letter-spacing: .08em; line-height: 1;
+  padding: 4px 7px; border-radius: 999px; background: var(--accent); color: var(--on-accent); }
+h1 .selo-beta { font-size: 12px; margin-left: 6px; position: relative; top: -2px; }
+.login-beta { margin: 6px 0 4px; color: var(--muted); }
+.rodape-beta { text-align: center; color: var(--muted); margin: 28px 0 8px; line-height: 1.8; }
+.rodape-beta a { color: var(--link); }
+.fb-item { padding: 12px 0; border-top: 1px solid var(--line); }
+.fb-item:first-child { border-top: 0; padding-top: 0; }
+.fb-item.resolvido { opacity: .6; }

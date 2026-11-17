@@ -25,10 +25,82 @@
   --up: #1D5FC2;
   --up-soft: rgba(29, 95, 194, .10);
   --danger: #C4321F;
+  --link: #C04E00;
+  --accent-text: #B44A00;
+  --destaque-bg: #FFF3EA;
+  --placeholder: #A39C96;
+  --pronto-bg: #ECF9E9;
+  --passou-bg: #FFF0E5;
+  --nav-bg: rgba(255, 255, 255, .95);
+  --toast-bg: var(--jt-black);
+  --toast-text: #FFFFFF;
+  --alerta-bg: #FDECEA;
+  --alerta-text: #A8281A;
   --r-sm: 8px; --r-md: 12px; --r-lg: 18px; --r-xl: 24px;
   --nav-h: 62px;
   --safe-b: env(safe-area-inset-bottom, 0px);
 }
+
+/* Modo escuro: escolhido em Ajustes ou no login (data-tema no <html>); "auto" segue o aparelho */
+:root[data-tema="escuro"] {
+  color-scheme: dark;
+  --bg: #0E0D0C;
+  --card: #181614;
+  --card2: #221F1C;
+  --line: #312C28;
+  --text: #FDF8F5;
+  --muted: #ADA59E;
+  --link: #FF8A3D;
+  --accent-text: #FF9A55;
+  --accent-soft: rgba(252, 103, 3, .16);
+  --destaque-bg: #241710;
+  --placeholder: #6E6761;
+  --ok-text: #5BDB4B;
+  --ok-soft: rgba(26, 200, 9, .16);
+  --up: #7FB2FF;
+  --up-soft: rgba(127, 178, 255, .14);
+  --danger: #FF6F5E;
+  --pronto-bg: #11240E;
+  --passou-bg: #2A1A0D;
+  --nav-bg: rgba(14, 13, 12, .94);
+  --toast-bg: #FDF8F5;
+  --toast-text: #090909;
+  --alerta-bg: #3A1712;
+  --alerta-text: #FF9C8F;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-tema="auto"] {
+    color-scheme: dark;
+    --bg: #0E0D0C;
+    --card: #181614;
+    --card2: #221F1C;
+    --line: #312C28;
+    --text: #FDF8F5;
+    --muted: #ADA59E;
+    --link: #FF8A3D;
+    --accent-text: #FF9A55;
+    --accent-soft: rgba(252, 103, 3, .16);
+    --destaque-bg: #241710;
+    --placeholder: #6E6761;
+    --ok-text: #5BDB4B;
+    --ok-soft: rgba(26, 200, 9, .16);
+    --up: #7FB2FF;
+    --up-soft: rgba(127, 178, 255, .14);
+    --danger: #FF6F5E;
+    --pronto-bg: #11240E;
+    --passou-bg: #2A1A0D;
+    --nav-bg: rgba(14, 13, 12, .94);
+    --toast-bg: #FDF8F5;
+    --toast-text: #090909;
+    --alerta-bg: #3A1712;
+    --alerta-text: #FF9C8F;
+  }
+}
+/* No escuro o logotipo fica numa placa marfim: o halter e o "Já" são pretos e o manual não permite recolorir a marca */
+:root[data-tema="escuro"] .login-marca, :root[data-tema="auto"] .login-marca { display: inline-block; }
+:root[data-tema="escuro"] .login-logo { background: #FDF8F5; border-radius: var(--r-lg); padding: 10px 16px; box-sizing: content-box; }
+@media (prefers-color-scheme: dark) { :root[data-tema="auto"] .login-logo { background: #FDF8F5; border-radius: var(--r-lg); padding: 10px 16px; box-sizing: content-box; } }
+.login-tema { display: block; margin: 0 0 4px auto; }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 /* O atributo hidden precisa vencer display: flex/grid das classes (a barra de descanso não sumia ao tocar no ✕) */
@@ -48,10 +120,10 @@ h3 { font-size: 13px; font-weight: 700; margin: 24px 0 8px; color: var(--accent)
 p { margin: 4px 0; }
 .muted { color: var(--muted); }
 .small { font-size: 13px; }
-a { color: #C04E00; } /* laranja escurecido para links: contraste em texto pequeno */
+a { color: var(--link); } /* laranja ajustado para links: contraste em texto pequeno */
 
 .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 16px; margin: 12px 0; }
-.card.destaque { border-color: var(--accent); background: #FFF3EA; }
+.card.destaque { border-color: var(--accent); background: var(--destaque-bg); }
 .linha { display: flex; align-items: center; gap: 10px; }
 .linha.entre { justify-content: space-between; }
 .cresce { flex: 1; min-width: 0; }
@@ -68,7 +140,7 @@ a { color: #C04E00; } /* laranja escurecido para links: contraste em texto peque
 .tag { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; padding: 3px 8px; border-radius: var(--r-sm); background: var(--card2); color: var(--muted); }
 .tag.ok { background: var(--ok-soft); color: var(--ok-text); }
 .tag.up { background: var(--up-soft); color: var(--up); }
-.tag.ac { background: var(--accent-soft); color: #B44A00; }
+.tag.ac { background: var(--accent-soft); color: var(--accent-text); }
 
 /* Semana */
 .semana { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
@@ -128,7 +200,7 @@ body { padding-top: 0; }
   -webkit-appearance: none; appearance: none;
 }
 .campo input:focus { outline: none; border-color: var(--accent); }
-.campo input::placeholder { color: #A39C96; font-weight: 500; }
+.campo input::placeholder { color: var(--placeholder); font-weight: 500; }
 .campo em { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-style: normal; font-size: 12px; color: var(--muted); pointer-events: none; }
 .ok-btn { height: 46px; border-radius: 10px; border: 2px solid var(--line); background: transparent; color: var(--muted); font-size: 20px; cursor: pointer; }
 .serie.feita .ok-btn { background: var(--ok); border-color: var(--ok); color: var(--jt-black); }
@@ -143,10 +215,10 @@ body { padding-top: 0; }
   display: flex; align-items: center; gap: 12px;
 }
 .descanso .tempo { font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; min-width: 92px; }
-.descanso.pronto { background: #ECF9E9; border-color: var(--ok); }
+.descanso.pronto { background: var(--pronto-bg); border-color: var(--ok); }
 .descanso.pronto .tempo { color: var(--ok-text); }
-.descanso.passou { background: #FFF0E5; }
-.descanso.passou .tempo { color: #B44A00; }
+.descanso.passou { background: var(--passou-bg); }
+.descanso.passou .tempo { color: var(--accent-text); }
 
 /* Escolhas (esforço, cardio) */
 .opcoes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
@@ -166,7 +238,7 @@ textarea, .input-texto { width: 100%; font: inherit; color: var(--text); backgro
 .cat-item.bloq { opacity: .45; cursor: default; }
 .cat-detalhe { margin-top: 8px; }
 .card h3:first-child { margin-top: 4px; }
-.link-btn { background: none; border: 0; color: #C04E00; font: inherit; font-size: 14px; padding: 10px 0 0; cursor: pointer; text-align: center; width: 100%; }
+.link-btn { background: none; border: 0; color: var(--link); font: inherit; font-size: 14px; padding: 10px 0 0; cursor: pointer; text-align: center; width: 100%; }
 .ed-ex { flex-wrap: wrap; }
 .ed-ex .ed-acoes { width: 100%; justify-content: flex-end; }
 .descanso .btn-mini { min-height: 44px; }
@@ -217,7 +289,7 @@ body.sem-login .nav { display: none; }
 .ed-acoes button.perigo { color: var(--danger); }
 .ed-ex { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); }
 .ed-ex .num-ex { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--card2); display: grid; place-items: center; font-size: 12px; font-weight: 700; color: var(--muted); }
-.btn-add { display: block; width: 100%; margin-top: 10px; padding: 10px; border-radius: 10px; border: 1px dashed var(--line); background: transparent; color: #C04E00; font: inherit; font-weight: 600; cursor: pointer; text-align: center; text-decoration: none; }
+.btn-add { display: block; width: 100%; margin-top: 10px; padding: 10px; border-radius: 10px; border: 1px dashed var(--line); background: transparent; color: var(--link); font: inherit; font-weight: 600; cursor: pointer; text-align: center; text-decoration: none; }
 .thumb-mini { width: 100%; max-width: 220px; border-radius: 8px; display: block; margin-top: 6px; }
 .barra-fixa { position: sticky; bottom: calc(var(--nav-h) + var(--safe-b)); background: var(--bg); padding: 8px 0 4px; display: flex; gap: 8px; z-index: 6; }
 .barra-fixa .btn { margin-top: 0; }
@@ -241,7 +313,7 @@ body.sem-login .nav { display: none; }
 /* Listas */
 .item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); color: var(--text); text-decoration: none; }
 .item:first-child { border-top: 0; }
-.item .ficha-badge { flex: none; width: 44px; height: 44px; border-radius: var(--r-md); background: var(--accent-soft); color: #B44A00; display: grid; place-items: center; font-weight: 800; }
+.item .ficha-badge { flex: none; width: 44px; height: 44px; border-radius: var(--r-md); background: var(--accent-soft); color: var(--accent-text); display: grid; place-items: center; font-weight: 800; }
 .item .seta { color: var(--muted); }
 table { width: 100%; border-collapse: collapse; font-size: 14px; }
 td, th { padding: 8px 4px; border-top: 1px solid var(--line); text-align: left; }
@@ -260,16 +332,16 @@ svg.grafico { display: block; width: 100%; height: auto; margin-top: 8px; }
 .nav {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: flex;
   height: calc(var(--nav-h) + var(--safe-b)); padding-bottom: var(--safe-b);
-  background: rgba(255, 255, 255, .95); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top: 1px solid var(--line);
+  background: var(--nav-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top: 1px solid var(--line);
 }
 .nav a { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 10px; color: var(--muted); text-decoration: none; }
 .nav a .ico { font-size: 20px; line-height: 1; }
 .nav a.sel { color: var(--accent); font-weight: 700; }
 
-.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--nav-h) + var(--safe-b) + 110px); z-index: 40; background: var(--jt-black); color: #fff; padding: 10px 16px; border-radius: 20px; font-size: 14px; font-weight: 600; max-width: calc(100% - 32px); box-shadow: 0 6px 24px rgba(0,0,0,.2); }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--nav-h) + var(--safe-b) + 110px); z-index: 40; background: var(--toast-bg); color: var(--toast-text); padding: 10px 16px; border-radius: 20px; font-size: 14px; font-weight: 600; max-width: calc(100% - 32px); box-shadow: 0 6px 24px rgba(0,0,0,.2); }
 
 /* ---------- Perfis: alunos, mensagens, administração ---------- */
-.tag.alerta { background: #FDECEA; color: #A8281A; border-color: transparent; }
+.tag.alerta { background: var(--alerta-bg); color: var(--alerta-text); border-color: transparent; }
 .tem-aviso { position: relative; }
 .tem-aviso .ico::after { content: ''; position: absolute; top: 4px; margin-left: 2px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
 .conversa { display: flex; flex-direction: column; gap: 6px; padding-bottom: 90px; }

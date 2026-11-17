@@ -130,7 +130,7 @@ function telaLogin() {
   const voltar = '<button class="btn sec" data-acao="login-modo" data-modo="entrar">Voltar ao login</button>';
 
   if (modoLogin === 'nova-senha') {
-    return `<div class="login">${topo}
+    return `<div class="login">${botaoTemaLogin()}${topo}
       <form class="card form" data-form="nova-senha">
         <label>Nova senha (mínimo 6 caracteres)<input class="input-texto" type="password" name="senha" autocomplete="new-password" required></label>
         <label>Confirme a nova senha<input class="input-texto" type="password" name="senha2" autocomplete="new-password" required></label>
@@ -138,7 +138,7 @@ function telaLogin() {
       </form></div>`;
   }
   if (modoLogin === 'redefinir') {
-    return `<div class="login">${topo}${aviso}
+    return `<div class="login">${botaoTemaLogin()}${topo}${aviso}
       <form class="card form" data-form="redefinir">
         <label>E-mail da conta<input class="input-texto" type="email" name="email" autocomplete="email" autocapitalize="none" required></label>
         <p class="muted small" style="margin:0">Enviamos um link para criar uma nova senha. Abra o link no próprio celular.</p>
@@ -146,7 +146,7 @@ function telaLogin() {
       </form>${voltar}</div>`;
   }
   if (modoLogin === 'criar') {
-    return `<div class="login">${topo}${aviso}
+    return `<div class="login">${botaoTemaLogin()}${topo}${aviso}
       <form class="card form" data-form="criar">
         <label>Seu nome<input class="input-texto" name="nome" autocomplete="name" required></label>
         <label>E-mail<input class="input-texto" type="email" name="email" autocomplete="email" autocapitalize="none" required></label>
@@ -156,7 +156,7 @@ function telaLogin() {
         ${erro}<button class="btn" type="submit">Criar conta</button>
       </form>${voltar}</div>`;
   }
-  return `<div class="login">${topo}${aviso}
+  return `<div class="login">${botaoTemaLogin()}${topo}${aviso}
     <form class="card form" data-form="entrar">
       <label>E-mail<input class="input-texto" name="email" inputmode="email" autocomplete="username" autocapitalize="none" required></label>
       <label>Senha<div class="linha"><input class="input-texto cresce" type="password" name="senha" autocomplete="current-password" required>

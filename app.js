@@ -46,6 +46,39 @@ function abrirConta(conta) {
 }
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
 
+// ---------- Tema (claro, escuro ou automático) ----------
+// Fica no aparelho, fora da conta: vale já na tela de login. O <head> aplica antes de pintar (index.html).
+const TEMA_KEY = 'meutreino:tema';
+const TEMAS = [['claro', '☀️ Claro'], ['escuro', '🌙 Escuro'], ['auto', '📱 Automático']];
+function temaAtual() { try { return localStorage.getItem(TEMA_KEY) || 'claro'; } catch (e) { return 'claro'; } }
+const temaEscuro = (t = temaAtual()) => t === 'escuro' || (t === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+function aplicarTema(t = temaAtual()) {
+  document.documentElement.dataset.tema = t;
+  const cor = temaEscuro(t) ? '#0E0D0C' : '#FDF8F5';
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', cor);
+  document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')?.setAttribute('content', temaEscuro(t) ? 'black' : 'default');
+}
+function mudarTema(t) {
+  try { localStorage.setItem(TEMA_KEY, t); } catch (e) { /* modo privado: vale só nesta sessão */ }
+  aplicarTema(t);
+}
+aplicarTema();
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => aplicarTema());
+// Botão do login: alterna entre claro e escuro
+const botaoTemaLogin = () => `<button class="btn-mini login-tema" data-acao="tema-alternar" aria-label="Alternar modo claro/escuro">${temaEscuro() ? '☀️ Claro' : '🌙 Escuro'}</button>`;
+function cartaoTema() {
+  const t = temaAtual();
+  return `<div class="card"><h2>Aparência</h2>
+    <div class="opcoes">${TEMAS.map(([v, r]) => `<button data-acao="tema" data-tema="${v}" class="${t === v ? 'sel' : ''}" aria-pressed="${t === v}">${r}</button>`).join('')}</div>
+    <p class="muted small" style="margin-top:8px">Automático segue o modo claro/escuro do celular. Vale para este aparelho.</p></div>`;
+}
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-acao="tema"], [data-acao="tema-alternar"]');
+  if (!el) return;
+  mudarTema(el.dataset.acao === 'tema' ? el.dataset.tema : temaEscuro() ? 'claro' : 'escuro');
+  render();
+});
+
 // ---------- Utilidades ----------
 const $ = (s, el = document) => el.querySelector(s);
 const app = $('#app');
@@ -790,7 +823,7 @@ function cartaoPerfil() {
 }
 
 // Versão publicada (mostrada em Ajustes, para conferir se o celular já carregou a atualização)
-const VERSAO_APP = '2026.11.17d';
+const VERSAO_APP = '2026.11.17e';
 async function buscarAtualizacao() {
   toast('Buscando atualização...');
   try {
@@ -805,6 +838,7 @@ function telaAjustes() {
     ${cartaoConta()}
     ${cartaoSocial()}
     ${cartaoPerfil()}
+    ${cartaoTema()}
     <div class="card"><div class="linha entre"><div class="cresce"><b>Manter tela ligada</b><p class="muted small">Durante o treino a tela não apaga sozinha.</p></div>
       <button class="btn-mini" data-acao="tela">${db.config.telaLigada ? 'Ligado' : 'Desligado'}</button></div></div>
     <div class="card"><h2>Backup</h2>

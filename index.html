@@ -16,6 +16,13 @@
   <link rel="preload" href="vendor/inter-5.3.0/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="styles.css">
+  <script>
+    // Tema antes da primeira pintura (sem piscar): claro (padrão do manual), escuro ou automático
+    (function () {
+      var t = 'claro'; try { t = localStorage.getItem('meutreino:tema') || 'claro'; } catch (e) {}
+      document.documentElement.dataset.tema = t;
+    })();
+  </script>
 </head>
 <body>
   <main id="app"></main>

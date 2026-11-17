@@ -363,7 +363,8 @@ a.ficha { text-decoration: none; color: inherit; }
   padding: 4px 7px; border-radius: 999px; background: var(--accent); color: var(--on-accent); }
 h1 .selo-beta { font-size: 12px; margin-left: 6px; position: relative; top: -2px; }
 .login-beta { margin: 6px 0 4px; color: var(--muted); }
-.rodape-beta { text-align: center; color: var(--muted); margin: 28px 0 8px; line-height: 1.8; }
+.rodape-beta { text-align: center; color: var(--muted); margin: 28px 0 8px; }
+.rodape-beta p { margin: 0 0 6px; }
 .rodape-beta a { color: var(--link); }
 .fb-item { padding: 12px 0; border-top: 1px solid var(--line); }
 .fb-item:first-child { border-top: 0; padding-top: 0; }
@@ -401,3 +402,8 @@ input[type="date"].input-texto::-webkit-calendar-picker-indicator { margin-left:
 .med-form summary { cursor: pointer; list-style: none; }
 .med-form summary::-webkit-details-marker { display: none; }
 .med-form .form { margin-top: 10px; }
+
+/* ---------- Abas de Progresso (Exercícios | Corpo) ---------- */
+.segmento { display: grid; grid-template-columns: 1fr 1fr; background: var(--card2); border: 1px solid var(--line); border-radius: 12px; padding: 3px; margin: 4px 0 14px; }
+.segmento a { text-align: center; padding: 8px; border-radius: 9px; color: var(--muted); font-weight: 600; text-decoration: none; }
+.segmento a.sel { background: var(--card); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.08); }

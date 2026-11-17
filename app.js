@@ -736,10 +736,13 @@ function grafico(pontos, alto = 70) {
 }
 
 function telaProgresso(fichaSel) {
+  const corpo = fichaSel === 'corpo';
+  const abas = `<div class="segmento"><a href="#/progresso" class="${corpo ? '' : 'sel'}">Exercícios</a><a href="#/progresso/corpo" class="${corpo ? 'sel' : ''}">Corpo</a></div>`;
+  if (corpo) return `<h1>Progresso</h1>${abas}${telaProgressoCorpo()}`;
   const ids = fichasIds();
-  if (!ids.length) return `<h1>Progresso</h1><div class="vazio">Crie um programa de treino para acompanhar o progresso.<a class="btn" href="#/criar">Criar meu treino</a></div>`;
+  if (!ids.length) return `<h1>Progresso</h1>${abas}<div class="vazio">Crie um programa de treino para acompanhar o progresso.<a class="btn" href="#/criar">Criar meu treino</a></div>`;
   const sel = ids.includes(fichaSel) ? fichaSel : ids.includes((sessoesOrdenadas()[0] || {}).treino) ? sessoesOrdenadas()[0].treino : ids[0];
-  let h = `<h1>Progresso</h1><p class="muted small">${esc(programaAtivo().nome)}</p><div class="chips">${ids.map((f) => `<a href="#/progresso/${encodeURIComponent(f)}" class="${f === sel ? 'sel' : ''}">${esc(f)}</a>`).join('')}</div>`;
+  let h = `<h1>Progresso</h1>${abas}<p class="muted small">${esc(programaAtivo().nome)}</p><div class="chips">${ids.map((f) => `<a href="#/progresso/${encodeURIComponent(f)}" class="${f === sel ? 'sel' : ''}">${esc(f)}</a>`).join('')}</div>`;
   const t = fichaDe(sel);
   h += `<p class="muted small" style="margin-top:12px">${esc(t.progressao)}</p>`;
   for (const ex of exerciciosDe(t)) {
@@ -827,7 +830,7 @@ function cartaoPerfil() {
 }
 
 // Versão publicada (mostrada em Ajustes, para conferir se o celular já carregou a atualização)
-const VERSAO_APP = '2026.11.17k';
+const VERSAO_APP = '2026.11.17l';
 async function buscarAtualizacao() {
   toast('Buscando atualização...');
   try {

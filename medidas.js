@@ -153,3 +153,52 @@ document.addEventListener('click', (e) => {
   }
 });
 document.addEventListener('toggle', (e) => { if (e.target.classList?.contains('med-form')) med.aberto = e.target.open; }, true);
+
+// ---------- Progresso → Corpo: evolução do peso e das medidas ----------
+// Série de um campo ao longo do tempo, no formato do grafico() de app.js ({ data, kg })
+function serieCorpo(campo) {
+  if (campo === 'peso') return [...(db.perfil.pesos || [])].sort((a, b) => a.data.localeCompare(b.data)).map((p) => ({ data: p.data, kg: p.kg }));
+  const lista = [...(db.perfil.medidas || [])].sort((a, b) => a.data.localeCompare(b.data));
+  if (campo === 'gordura') {
+    // informada; se não houver no dia, estimada pela fita com as medidas daquele registro
+    return lista.map((m) => {
+      if (m.gordura != null) return { data: m.data, kg: m.gordura };
+      const u = Object.fromEntries(CAMPOS_MEDIDA.filter(([c]) => m[c] != null).map(([c]) => [c, { v: m[c] }]));
+      const e = gorduraEstimada(u);
+      return e !== null && e > 2 && e < 70 ? { data: m.data, kg: Math.round(e * 10) / 10, estimada: true } : null;
+    }).filter(Boolean);
+  }
+  return lista.filter((m) => m[campo] != null).map((m) => ({ data: m.data, kg: m[campo] }));
+}
+
+function cartaoEvolucao(nome, un, pts, obs = '') {
+  const ult = pts[pts.length - 1], pri = pts[0];
+  const dif = pts.length > 1 ? ult.kg - pri.kg : 0;
+  const u = un === 'nível' ? '' : un === '%' ? '%' : ` ${un}`;
+  return `<div class="card"><div class="linha entre"><b>${nome}</b><span class="muted small">${pts.length} registro${pts.length > 1 ? 's' : ''}</span></div>
+    <div class="linha entre small"><span class="muted">Atual: <b style="color:var(--text)">${fmtMed(ult.kg)}${u}</b> em ${fmtData(ult.data)}</span>
+      ${dif ? `<span class="muted">${dif > 0 ? '+' : ''}${fmtMed(dif)}${u} desde ${fmtData(pri.data)}/${pri.data.slice(2, 4)}</span>` : ''}</div>
+    ${grafico(pts)}${obs ? `<p class="muted small" style="margin:6px 0 0">${obs}</p>` : ''}</div>`;
+}
+
+function telaProgressoCorpo() {
+  const blocos = [];
+  const peso = serieCorpo('peso');
+  if (peso.length) blocos.push(cartaoEvolucao('Peso', 'kg', peso));
+  const gord = serieCorpo('gordura');
+  if (gord.length) blocos.push(cartaoEvolucao('Gordura corporal', '%', gord, gord.some((p) => p.estimada) ? 'Alguns pontos estimados pela fita (método da Marinha dos EUA).' : ''));
+  for (const [c, rot, un] of CAMPOS_MEDIDA) {
+    if (c === 'gordura') continue;
+    const pts = serieCorpo(c);
+    if (pts.length) blocos.push(cartaoEvolucao(rot, un, pts));
+  }
+  if (somenteLeitura) { // personal vendo o aluno
+    return blocos.join('') || '<div class="vazio">O aluno ainda não registrou peso nem medidas.</div>';
+  }
+  if (!blocos.length) {
+    return `<div class="vazio">Registre seu peso e suas medidas para acompanhar a evolução do corpo.
+      <a class="btn" href="#/ajustes/dados">Registrar peso e medidas</a></div>`;
+  }
+  return `${blocos.join('')}<a class="btn sec" href="#/ajustes/dados">Registrar peso ou medidas</a>
+    <p class="muted small">O gráfico aparece a partir do segundo registro.</p>`;
+}

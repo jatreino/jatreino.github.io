@@ -157,6 +157,7 @@ function telaAluno(id, args) {
       <a class="ficha" href="#/aluno/${id}/historico"><b>☰</b><span>Histórico</span></a>
       <a class="ficha" href="#/aluno/${id}/relatorios"><b>▦</b><span>Relatórios</span></a>
       <a class="ficha" href="#/aluno/${id}/progresso"><b>↗</b><span>Evolução das cargas</span></a>
+      <a class="ficha" href="#/aluno/${id}/progresso/corpo"><b>⚖︎</b><span>Peso e medidas</span></a>
       ${u.vinculado || ehAdmin() ? `<a class="ficha" href="#/conversa/${id}"><b>💬</b><span>Mensagens</span></a>` : ''}
     </div>`;
   if (!u.vinculado) return h + '<p class="muted small">Você vê os dados deste usuário como administrador. Para prescrever treinos, ele precisa aceitar um convite seu.</p>';

@@ -13,8 +13,8 @@ const seloBeta = () => '<span class="selo-beta" title="Versão de testes">BETA</
 const PAGS_RODAPE = ['hoje', 'treinos', 'historico', 'progresso', 'relatorios', 'ajustes', 'alunos'];
 function rodapeBeta(pag) {
   if (!PAGS_RODAPE.includes(pag)) return '';
-  return `<p class="rodape-beta small">${seloBeta()} Versão de testes: pode haver falhas.
-    <a href="#/feedback">Enviar comentário ou relatar problema</a></p>`;
+  return `<div class="rodape-beta small"><p>${seloBeta()} Versão de testes: pode haver falhas.</p>
+    <p><a href="#/feedback">Enviar comentário ou relatar problema</a></p></div>`;
 }
 
 // Lembra de qual tela a pessoa veio (vai junto no relato)

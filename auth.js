@@ -15,6 +15,17 @@ const DEMO = { id: 'demo', login: 'admin', senha: 'admin', nome: 'Demonstração
 let modoLogin = 'entrar'; // 'entrar' | 'criar' | 'redefinir' | 'nova-senha'
 let boasVindas = false; // chegou pelo convite enviado pelo administrador: cria a primeira senha
 let avisoLogin = '';      // mensagem de sucesso mostrada na tela de login (ex.: "enviamos o e-mail")
+// Link recebido por e-mail (convite, redefinição de senha, confirmação). O código só é usado quando a pessoa toca
+// em "Continuar": assim os antivírus de e-mail (que abrem os links antes) não gastam o link de uso único.
+let linkEmail = null; // { token, tipo }
+const TEXTOS_LINK = {
+  invite: ['Bem-vindo ao Já treinô?!', 'Você foi convidado. Toque em continuar para criar a sua senha.', 'Continuar'],
+  recovery: ['Redefinir senha', 'Toque em continuar para escolher uma nova senha.', 'Continuar'],
+  email: ['Confirmar e-mail', 'Toque no botão para confirmar seu e-mail e entrar no app.', 'Confirmar meu e-mail'],
+  signup: ['Confirmar e-mail', 'Toque no botão para confirmar seu e-mail e entrar no app.', 'Confirmar meu e-mail'],
+  email_change: ['Confirmar novo e-mail', 'Toque no botão para confirmar a troca do seu e-mail.', 'Confirmar'],
+  magiclink: ['Entrar no app', 'Toque no botão para entrar na sua conta.', 'Entrar'],
+};
 
 // ---------- Contas locais (demonstração e contas antigas) ----------
 function lerContas() {
@@ -56,6 +67,18 @@ async function contaDemo() {
 // ---------- Sessão ----------
 // Chamado uma vez ao abrir o app (app.js), antes da primeira tela
 async function iniciarSessao() {
+  const q = new URLSearchParams(location.search);
+  if (q.get('token_hash')) {
+    linkEmail = { token: q.get('token_hash'), tipo: TEXTOS_LINK[q.get('type')] ? q.get('type') : 'email' };
+    history.replaceState(null, '', URL_APP);
+    modoLogin = 'link';
+    return;
+  }
+  // Link antigo/expirado que voltou do servidor com erro (ex.: "otp_expired")
+  if (/error_code=|error=access_denied/.test(HASH_INICIAL)) {
+    avisoLogin = 'Este link expirou ou já foi usado. Peça um novo convite ou use "Esqueci minha senha".';
+    history.replaceState(null, '', URL_APP);
+  }
   if (localStorage.getItem(SESSAO_KEY) === DEMO.id) { abrirConta(await contaDemo()); return; }
   const recuperacao = /type=(recovery|invite)/.test(HASH_INICIAL);
   boasVindas = /type=invite/.test(HASH_INICIAL);
@@ -129,7 +152,7 @@ function traduzErro(error) {
 function telaLogin() {
   const subtitulo = {
     entrar: 'Entre para acessar seus treinos', criar: 'Crie sua conta',
-    redefinir: 'Redefina a sua senha', 'nova-senha': boasVindas ? 'Bem-vindo! Crie a sua senha para começar' : 'Escolha a nova senha',
+    redefinir: 'Redefina a sua senha', 'nova-senha': boasVindas ? 'Bem-vindo! Crie a sua senha para começar' : 'Escolha a nova senha', link: '',
   }[modoLogin];
   const topo = `<div class="login-topo"><h1 class="login-marca"><img src="marca/logotipo_horizontal.svg" alt="Já treinô?" class="login-logo"></h1>
     <p class="login-beta small">${seloBeta()} Versão de testes: pode haver falhas.</p>
@@ -139,6 +162,13 @@ function telaLogin() {
     + (localStorage.getItem(CONVITE_KEY) && !avisoLogin ? '<div class="card destaque small">Você recebeu um convite do seu personal. Entre ou crie sua conta para aceitar.</div>' : '');
   const voltar = '<button class="btn sec" data-acao="login-modo" data-modo="entrar">Voltar ao login</button>';
 
+  if (modoLogin === 'link' && linkEmail) {
+    const [titulo, texto, botao] = TEXTOS_LINK[linkEmail.tipo];
+    return `<div class="login">${botaoTemaLogin()}<div class="login-topo"><h1 class="login-marca"><img src="marca/logotipo_horizontal.svg" alt="Já treinô?" class="login-logo"></h1></div>
+      <div class="card form"><h2 style="margin:0">${titulo}</h2><p class="small" style="margin:0">${texto}</p>
+        ${erro}<button class="btn" data-acao="link-confirmar">${botao}</button></div>
+      <button class="link-btn small" data-acao="login-modo" data-modo="entrar" style="display:block;margin:12px auto">Ir para o login</button></div>`;
+  }
   if (modoLogin === 'nova-senha') {
     return `<div class="login">${botaoTemaLogin()}${topo}
       <form class="card form" data-form="nova-senha">
@@ -232,6 +262,31 @@ async function enviarRedefinicao(form) {
   if (error) return erroLogin(traduzErro(error));
   avisoLogin = `Se houver uma conta com ${email}, você vai receber um e-mail com o link para criar a nova senha (veja também o spam).`;
   render();
+}
+
+async function confirmarLinkEmail(botao) {
+  if (!linkEmail) return;
+  botao.disabled = true; botao.textContent = 'Confirmando...';
+  let data = null, error = null;
+  try { ({ data, error } = await sb.auth.verifyOtp({ token_hash: linkEmail.token, type: linkEmail.tipo })); } catch (e) { error = e; }
+  const tipo = linkEmail.tipo;
+  if (error || !data?.session) {
+    botao.disabled = false; botao.textContent = TEXTOS_LINK[tipo][2];
+    const m = `${error?.code || ''} ${error?.message || ''}`;
+    linkEmail = null; modoLogin = tipo === 'recovery' ? 'redefinir' : 'entrar';
+    avisoLogin = /expired|invalid|not found|otp/i.test(m)
+      ? (tipo === 'invite' ? 'Este convite expirou ou já foi usado. Use "Esqueci minha senha" com o e-mail do convite para criar sua senha, ou peça um novo convite.'
+        : tipo === 'recovery' ? 'Este link expirou ou já foi usado. Peça um novo abaixo.'
+        : 'Este link expirou ou já foi usado. Se a conta já foi confirmada, é só entrar.')
+      : traduzErro(error);
+    return render();
+  }
+  linkEmail = null;
+  if (tipo === 'invite' || tipo === 'recovery') { boasVindas = tipo === 'invite'; modoLogin = 'nova-senha'; return render(); }
+  modoLogin = 'entrar';
+  toast(tipo === 'email_change' ? 'E-mail atualizado' : 'E-mail confirmado. Bem-vindo!');
+  entrarServidor(data.user);
+  irParaApp();
 }
 
 async function enviarNovaSenha(form) {
@@ -330,7 +385,8 @@ document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-acao]');
   if (!el) return;
   const acao = el.dataset.acao;
-  if (acao === 'login-modo') { modoLogin = el.dataset.modo; avisoLogin = ''; render(); }
+  if (acao === 'login-modo') { modoLogin = el.dataset.modo; avisoLogin = ''; linkEmail = null; render(); }
+  else if (acao === 'link-confirmar') confirmarLinkEmail(el);
   else if (acao === 'ver-senha') {
     const inp = el.parentElement.querySelector('input');
     inp.type = inp.type === 'password' ? 'text' : 'password';

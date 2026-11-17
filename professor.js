@@ -113,9 +113,14 @@ function telaConvidar() {
   return `<a href="#/alunos" class="small">‹ Alunos</a><h1>Convidar aluno</h1>
     <div class="card form">
       <label>Nome do aluno<input class="input-texto" id="cv-nome" placeholder="ex.: Maria Souza"></label>
-      <label>E-mail (opcional, para você se lembrar)<input class="input-texto" type="email" id="cv-email" autocapitalize="none"></label>
-      <button class="btn" data-acao="prof-criar-convite">Gerar link de convite</button>
-      <p class="muted small">O aluno abre o link, cria a conta (ou entra) e aceita. Ele passa a aparecer na sua lista e você pode enviar treinos e mensagens.</p>
+      <label>E-mail do aluno<input class="input-texto" type="email" id="cv-email" autocapitalize="none" autocomplete="off"></label>
+      <button class="btn" data-acao="prof-convidar-email">Enviar convite por e-mail</button>
+      <p class="muted small" style="margin:0">Se o aluno <b>ainda não usa o app</b>, ele recebe um e-mail para criar a senha. Se <b>já usa</b>, o convite aparece na tela inicial dele. Nos dois casos, ele só toca em <b>Aceitar</b> e passa a aparecer na sua lista.</p>
+    </div>
+    <div class="card form">
+      <b>Prefere mandar pelo WhatsApp?</b>
+      <button class="btn sec" data-acao="prof-criar-convite">Gerar link de convite</button>
+      <p class="muted small" style="margin:0">O aluno abre o link, entra ou cria a conta e aceita.</p>
     </div>`;
 }
 async function compartilharConvite(codigo, nome) {
@@ -227,7 +232,25 @@ document.addEventListener('click', async (e) => {
   const el = e.target.closest('[data-acao]');
   if (!el || !el.dataset.acao.startsWith('prof-')) return;
   const acao = el.dataset.acao;
-  if (acao === 'prof-criar-convite') {
+  if (acao === 'prof-convidar-email') {
+    const nome = $('#cv-nome').value.trim(), email = normEmail($('#cv-email').value);
+    if (!nome) return toast('Informe o nome do aluno');
+    if (!emailValido(email)) return toast('Informe um e-mail válido');
+    el.disabled = true; el.textContent = 'Enviando...';
+    let msg = null, data = null;
+    try {
+      const r = await sb.functions.invoke('convidar-aluno', { body: { nome, email, redirect_to: URL_APP } });
+      data = r.data;
+      if (r.error) {
+        try { msg = (await r.error.context.json()).erro; } catch (e2) { /* sem corpo */ }
+        msg ||= /404|Failed to send|fetch/i.test(r.error.message || '') ? 'O envio por e-mail ainda não foi ativado. Use "Gerar link de convite".' : 'Não foi possível enviar o convite.';
+      }
+    } catch (e2) { msg = 'Sem conexão com o servidor.'; }
+    el.disabled = false; el.textContent = 'Enviar convite por e-mail';
+    if (msg) return toast(msg);
+    toast(data?.conta_existente ? `${nome.split(' ')[0]} já usa o app: o convite vai aparecer na tela inicial dele.` : `Convite enviado para ${email}`);
+    prof.alunos = null; location.hash = '#/alunos';
+  } else if (acao === 'prof-criar-convite') {
     const nome = $('#cv-nome').value.trim(), email = normEmail($('#cv-email').value);
     if (!nome) return toast('Informe o nome do aluno');
     const codigo = uid() + uid().slice(-4);

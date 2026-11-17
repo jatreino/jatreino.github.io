@@ -7,7 +7,7 @@
 // Se o script do servidor ainda não foi rodado, tudo aqui fica escondido e o app funciona como antes.
 
 let meuPerfil = null;
-const social = { disponivel: false, naoLidas: 0, prescricoes: [], professores: [], carregadoEm: 0 };
+const social = { disponivel: false, naoLidas: 0, prescricoes: [], professores: [], convites: [], carregadoEm: 0 };
 const ehProfessor = () => social.disponivel && ['professor', 'admin'].includes(meuPerfil?.papel);
 const ehAdmin = () => social.disponivel && meuPerfil?.papel === 'admin';
 const CONVITE_KEY = 'meutreino:convite';
@@ -60,6 +60,8 @@ async function atualizarAvisosSociais() {
   social.naoLidas = msgs.count || 0;
   social.prescricoes = presc.data || [];
   social.professores = (vinc.data || []).map((v) => v.professor_id);
+  // Convites de personal enviados para o meu e-mail (supabase-convites-email.sql); sem a função, fica vazio
+  try { const r = await sb.rpc('meus_convites'); social.convites = r.error ? [] : r.data || []; } catch (e) { social.convites = []; }
   await buscarNomes([...social.professores, ...social.prescricoes.map((p) => p.professor_id)]);
   social.carregadoEm = Date.now();
   atualizarNav();
@@ -81,6 +83,14 @@ function atualizarNav() {
 function cartoesSociaisHoje() {
   if (!social.disponivel) return '';
   let h = '';
+  for (const c of social.convites || []) {
+    h += `<div class="card destaque"><span class="tag ac">Convite</span>
+      <h2 style="margin-top:8px">${esc(c.professor_nome || 'Um personal')} quer acompanhar seus treinos</h2>
+      <p class="small" style="margin:0 0 6px">Ao aceitar, ${esc(c.professor_nome || 'o personal')} poderá ver seus treinos, cargas, peso e medidas, enviar programas e trocar mensagens com você.</p>
+      <p class="muted small">Você pode desfazer o vínculo quando quiser, em Ajustes.</p>
+      <div class="linha" style="gap:8px"><button class="btn" data-acao="soc-aceitar" data-codigo="${esc(c.codigo)}">Aceitar</button>
+      <button class="btn sec" data-acao="soc-recusar-email" data-codigo="${esc(c.codigo)}">Agora não</button></div></div>`;
+  }
   for (const pr of social.prescricoes) {
     h += `<div class="card destaque"><span class="tag ac">Novo treino de ${esc(nomeDe(pr.professor_id))}</span>
       <h2 style="margin-top:8px">${esc(pr.programa?.nome || 'Programa')}</h2>
@@ -288,9 +298,17 @@ document.addEventListener('click', async (e) => {
     localStorage.removeItem(CONVITE_KEY);
     if (error) return toast(error.message || 'Não foi possível aceitar o convite');
     toast(`Agora ${data || 'seu personal'} acompanha seus treinos`);
+    social.convites = (social.convites || []).filter((c) => c.codigo !== el.dataset.codigo);
     await atualizarAvisosSociais();
-    location.hash = '#/hoje';
+    if (location.hash === '#/hoje') render(); else location.hash = '#/hoje';
   } else if (acao === 'soc-recusar') { localStorage.removeItem(CONVITE_KEY); location.hash = '#/hoje'; }
+  else if (acao === 'soc-recusar-email') {
+    if (el.dataset.confirmando !== '1') { el.dataset.confirmando = '1'; el.textContent = 'Recusar convite?'; return; }
+    const { error } = await sb.rpc('recusar_convite', { p_codigo: el.dataset.codigo });
+    if (error) return toast('Não foi possível recusar o convite');
+    social.convites = social.convites.filter((c) => c.codigo !== el.dataset.codigo);
+    toast('Convite recusado'); render();
+  }
   else if (acao === 'soc-enviar') {
     const caixa = $('#msg-texto'), texto = caixa.value.trim();
     if (!texto) return;

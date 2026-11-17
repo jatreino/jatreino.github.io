@@ -356,3 +356,4 @@ svg.grafico { display: block; width: 100%; height: auto; margin-top: 8px; }
 .stat b { display: block; font-size: 22px; }
 .stat span { font-size: 11px; color: var(--muted); }
 a.ficha { text-decoration: none; color: inherit; }
+.btn-mini.perigo { color: var(--danger); border-color: var(--danger); }

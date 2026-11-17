@@ -91,12 +91,17 @@ function irParaApp() {
   render();
 }
 
+// Espera no máximo `ms`: sem internet (ou com a rede travada) a saída não pode ficar presa
+const comLimite = (promessa, ms) => Promise.race([Promise.resolve(promessa).catch(() => {}), new Promise((r) => setTimeout(r, ms))]);
+
 async function sair() {
-  if (contaAtual?.servidor) {
-    await enviarAoServidor();
-    try { await sb.auth.signOut(); } catch (e) { /* offline: a sessão local é apagada mesmo assim */ }
+  if (contaAtual?.servidor) try {
+    await comLimite(enviarAoServidor(), 4000);
+    // scope 'local': apaga a sessão deste aparelho sem depender do servidor responder
+    await comLimite(sb.auth.signOut({ scope: 'local' }), 3000);
+    try { for (const k of Object.keys(localStorage)) if (/^sb-.*-auth-token/.test(k)) localStorage.removeItem(k); } catch (e) { /* ok */ }
     localStorage.removeItem(USUARIO_KEY);
-  }
+  } catch (e) { /* segue saindo mesmo assim */ }
   localStorage.removeItem(SESSAO_KEY);
   contaAtual = null;
   db = novoDb();
@@ -330,10 +335,18 @@ document.addEventListener('click', (e) => {
     const inp = el.parentElement.querySelector('input');
     inp.type = inp.type === 'password' ? 'text' : 'password';
   } else if (acao === 'sair') {
-    const msg = contaAtual?.servidor
-      ? 'Sair desta conta? Seus treinos ficam salvos no servidor; para entrar de novo use e-mail e senha.'
-      : 'Sair da demonstração?';
-    if (confirm(msg)) sair();
+    // Confirmação dentro do próprio botão (o aviso nativo do navegador falha em alguns apps instalados no iPhone)
+    if (el.dataset.confirmando !== '1') {
+      el.dataset.confirmando = '1';
+      el.textContent = 'Toque de novo para sair';
+      el.classList.add('perigo');
+      clearTimeout(el._volta);
+      el._volta = setTimeout(() => { el.dataset.confirmando = ''; el.textContent = 'Sair'; el.classList.remove('perigo'); }, 4000);
+      return;
+    }
+    clearTimeout(el._volta);
+    el.disabled = true; el.textContent = 'Saindo...';
+    sair();
   } else if (acao === 'sincronizar' && contaAtual?.servidor) {
     toast('Sincronizando...');
     sincronizarAoAbrir().then(() => toast(textoSync()));

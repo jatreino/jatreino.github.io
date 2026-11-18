@@ -3,14 +3,14 @@
 // Login.
 // - Conta principal: e-mail e senha no Supabase (servidor.js). Os dados sincronizam com a nuvem,
 //   então o mesmo login funciona em qualquer ícone, no Safari ou em outro aparelho.
-// - Demonstração: login "admin" / senha "admin", perfil só deste aparelho (não vai ao servidor).
+// - Demonstração: login "teste" / senha "teste", perfil só deste aparelho (não vai ao servidor).
 // - Contas locais da versão anterior (por CPF) deixam de ser usadas; os treinos delas sobem para
 //   a conta do servidor no primeiro login (servidor.js -> dadosLocaisAntigos).
 
 const CONTAS_KEY = 'meutreino:contas';
 const SESSAO_KEY = 'meutreino:sessao'; // só a sessão da demonstração
 const ITERACOES = 150000;
-const DEMO = { id: 'demo', login: 'admin', senha: 'admin', nome: 'Demonstração' };
+const DEMO = { id: 'demo', login: 'teste', senha: 'teste', nome: 'Demonstração' };
 
 let modoLogin = 'entrar'; // 'entrar' | 'criar' | 'redefinir' | 'nova-senha'
 let boasVindas = false; // chegou pelo convite enviado pelo administrador: cria a primeira senha
@@ -60,6 +60,11 @@ async function conferirSenha(conta, senha) {
 async function contaDemo() {
   const contas = lerContas();
   let demo = contas.find((c) => c.id === DEMO.id);
+  // Login ou senha da demonstração mudaram: o aparelho deixa de aceitar os antigos (a senha guardada é refeita)
+  if (demo && demo.login !== DEMO.login) {
+    Object.assign(demo, { login: DEMO.login, ...(await novaCredencial(DEMO.senha)) });
+    gravarContas(contas);
+  }
   if (!demo) {
     demo = { id: DEMO.id, login: DEMO.login, nome: DEMO.nome, demo: true, ...(await novaCredencial(DEMO.senha)) };
     contas.push(demo); gravarContas(contas);
@@ -317,7 +322,7 @@ function cartaoConta() {
   const c = contaAtual;
   if (c.demo) {
     return `<div class="card"><h2>Conta</h2>
-      <div><b>${esc(c.nome)}</b><div class="muted small">admin · demonstração</div></div>
+      <div><b>${esc(c.nome)}</b><div class="muted small">conta de demonstração</div></div>
       <p class="muted small" style="margin-top:10px">Perfil para mostrar o app. Fica só neste aparelho e não afeta a sua conta.</p>
       <button class="btn sec" data-acao="demo-gerar">Carregar treinos de exemplo</button></div>`;
   }

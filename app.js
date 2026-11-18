@@ -254,9 +254,9 @@ function iniciarTreino(fichaId, dataManual = null) {
   location.hash = '#/treino';
 }
 
-function iniciarDescanso(bloco, rotulo) {
+function iniciarDescanso(bloco, rotulo, origem = '') {
   if (db.ativa.dataManual) return;
-  db.ativa.descanso = { inicio: Date.now(), min: bloco.descanso[0], max: bloco.descanso[1], rotulo };
+  db.ativa.descanso = { inicio: Date.now(), min: bloco.descanso[0], max: bloco.descanso[1], rotulo, origem };
   avisos.min = avisos.max = false;
   salvar();
   tick();
@@ -862,7 +862,7 @@ function cartaoPerfil() {
 }
 
 // Versão publicada (mostrada em Ajustes, para conferir se o celular já carregou a atualização)
-const VERSAO_APP = '2026.11.17x';
+const VERSAO_APP = '2026.11.18b';
 async function buscarAtualizacao() {
   toast('Buscando atualização...');
   try {
@@ -1020,14 +1020,19 @@ function marcarSerie(linha, ok, { automatico = false } = {}) {
       const ultimoEx = ex === bloco.exercicios[bloco.exercicios.length - 1];
       const ultimaSerie = i === bloco.voltas - 1;
       if (!(ultimoBloco && ultimoEx && ultimaSerie)) {
-        iniciarDescanso(bloco, ultimaSerie ? 'Próximo exercício' : `${ex.nome} · série ${i + 2}`);
+        iniciarDescanso(bloco, !ultimaSerie ? `${ex.nome} · série ${i + 2}` : ultimoEx ? 'Próximo bloco' : 'Próximo exercício', `${exId}:${i}`);
       } else { a.descanso = null; tick(); }
     } else if (bloco.exercicios.every((x) => a.series[x.id][i].ok)) {
       if (!(ultimoBloco && i === bloco.voltas - 1)) {
-        iniciarDescanso(bloco, `${bloco.nome} · ${i === bloco.voltas - 1 ? 'próximo bloco' : `volta ${i + 2}`}`);
+        iniciarDescanso(bloco, `${bloco.nome} · ${i === bloco.voltas - 1 ? 'próximo bloco' : `volta ${i + 2}`}`, `${exId}:${i}`);
       } else { a.descanso = null; tick(); }
+    } else if (a.descanso) {
+      // Circuito: a volta seguinte já começou, então o descanso da volta anterior acabou (não fica contando "passou")
+      a.descanso = null; tick();
     }
   }
+  // Desfez a série que tinha iniciado o descanso: o descanso também é desfeito
+  if (!ok && a.descanso && a.descanso.origem === `${exId}:${i}`) { a.descanso = null; tick(); }
   salvar(); atualizarContador();
   return true;
 }
@@ -1066,6 +1071,8 @@ document.addEventListener('click', (e) => {
   else if (acao === 'serie') {
     const linha = el.closest('.serie');
     const st = a.series[linha.dataset.ex][+linha.dataset.i];
+    // Reforço: série acabou de ser concluída automaticamente por este mesmo toque -> não desmarca
+    if (st.ok && ultimaAuto.chave === `${linha.dataset.ex}:${linha.dataset.i}` && Date.now() - ultimaAuto.em < 600) return;
     marcarSerie(linha, !st.ok);
   }
 
@@ -1125,12 +1132,25 @@ document.addEventListener('input', (e) => {
   }
 });
 
+// Toque no ✓ de uma série: o teclado fecha antes do clique e dispara a conclusão automática (abaixo).
+// Sem este controle, o clique que vem logo depois desmarcava a série e o descanso recomeçava do zero.
+const toqueOk = { em: 0, chave: '' };
+document.addEventListener('pointerdown', (e) => {
+  const linha = e.target.closest?.('[data-acao="serie"]')?.closest('.serie');
+  if (linha) { toqueOk.em = Date.now(); toqueOk.chave = `${linha.dataset.ex}:${linha.dataset.i}`; }
+}, true);
+const ultimaAuto = { em: 0, chave: '' };
+
 document.addEventListener('change', (e) => {
   if (e.target.dataset.acao === 'importar') importar(e.target);
   // Ao terminar de digitar as repetições (OK do teclado ou tocar fora), a série é concluída
   if (e.target.dataset.campo === 'reps' && db.ativa && num(e.target.value) !== null) {
     const linha = e.target.closest('.serie');
-    if (linha && !db.ativa.series[linha.dataset.ex][+linha.dataset.i].ok) marcarSerie(linha, true, { automatico: true });
+    const chave = linha && `${linha.dataset.ex}:${linha.dataset.i}`;
+    if (chave && chave === toqueOk.chave && Date.now() - toqueOk.em < 1000) return; // o próprio ✓ conclui
+    if (linha && !db.ativa.series[linha.dataset.ex][+linha.dataset.i].ok && marcarSerie(linha, true, { automatico: true })) {
+      ultimaAuto.em = Date.now(); ultimaAuto.chave = chave;
+    }
   }
   if (e.target.dataset.perfil) {
     db.perfil[e.target.dataset.perfil] = e.target.value.trim();

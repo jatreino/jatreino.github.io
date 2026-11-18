@@ -862,7 +862,7 @@ function cartaoPerfil() {
 }
 
 // Versão publicada (mostrada em Ajustes, para conferir se o celular já carregou a atualização)
-const VERSAO_APP = '2026.11.17v';
+const VERSAO_APP = '2026.11.17w';
 async function buscarAtualizacao() {
   toast('Buscando atualização...');
   try {

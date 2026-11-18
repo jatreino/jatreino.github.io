@@ -35,9 +35,9 @@ function gravarContas(contas) { localStorage.setItem(CONTAS_KEY, JSON.stringify(
 
 const normEmail = (s) => (s || '').normalize('NFKC').replace(/[​-‍﻿]/g, '').trim().toLowerCase();
 const emailValido = (s) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s);
-// Senha mínima: 8 caracteres com letras e números (vale para novas senhas; as antigas continuam entrando)
-const senhaFraca = (s) => s.length < 8 || !/[a-zA-ZÀ-ÿ]/.test(s) || !/\d/.test(s);
-const MSG_SENHA = 'A senha precisa ter pelo menos 8 caracteres, com letras e números.';
+// Senha mínima: 8 caracteres com maiúscula, minúscula e número (mesma regra do Supabase) (vale para novas senhas; as antigas continuam entrando)
+const senhaFraca = (s) => s.length < 8 || !/[a-z]/.test(s) || !/[A-Z]/.test(s) || !/\d/.test(s);
+const MSG_SENHA = 'A senha precisa ter pelo menos 8 caracteres, com letra maiúscula, letra minúscula e número.';
 function mascararEmail(e) {
   const [u, d] = (e || '').split('@');
   return d ? `${u.slice(0, 2)}***@${d}` : e || '';
@@ -152,7 +152,7 @@ function traduzErro(error) {
   if (/already registered|already been registered/i.test(m)) return 'Já existe uma conta com esse e-mail. Use "Entrar" ou "Esqueci minha senha".';
   if (/Error sending|sending (recovery|confirmation|invite|magic link) email|smtp/i.test(m)) return 'Não foi possível enviar o e-mail agora. Tente de novo em alguns minutos; se continuar, fale com o suporte.';
   if (/rate limit|too many/i.test(m)) return 'Muitas tentativas ou e-mails seguidos. Aguarde alguns minutos e tente de novo.';
-  if (/Password should be|weak|pwned|leaked/i.test(m)) return 'Senha fraca ou já vazada em outros sites: use pelo menos 8 caracteres, com letras e números, e evite senhas comuns.';
+  if (/Password should be|weak|pwned|leaked/i.test(m)) return 'Senha fraca ou já vazada em outros sites: use pelo menos 8 caracteres, com maiúscula, minúscula e número, e evite senhas comuns.';
   if (/fetch|network|Failed to/i.test(m)) return 'Sem conexão com o servidor. Verifique a internet.';
   return m || 'Não foi possível concluir. Tente de novo.';
 }
@@ -181,7 +181,7 @@ function telaLogin() {
   if (modoLogin === 'nova-senha') {
     return `<div class="login">${botaoTemaLogin()}${topo}
       <form class="card form" data-form="nova-senha">
-        <label>${boasVindas ? 'Senha' : 'Nova senha'} (mínimo 8, com letras e números)<input class="input-texto" type="password" name="senha" autocomplete="new-password" required></label>
+        <label>${boasVindas ? 'Senha' : 'Nova senha'} (mínimo 8, com maiúscula, minúscula e número)<input class="input-texto" type="password" name="senha" autocomplete="new-password" required></label>
         <label>Confirme a ${boasVindas ? '' : 'nova '}senha<input class="input-texto" type="password" name="senha2" autocomplete="new-password" required></label>
         ${erro}<button class="btn" type="submit">Salvar e entrar</button>
       </form></div>`;
@@ -199,7 +199,7 @@ function telaLogin() {
       <form class="card form" data-form="criar">
         <label>Seu nome<input class="input-texto" name="nome" autocomplete="name" required></label>
         <label>E-mail<input class="input-texto" type="email" name="email" autocomplete="email" autocapitalize="none" required></label>
-        <label>Senha (mínimo 8, com letras e números)<input class="input-texto" type="password" name="senha" autocomplete="new-password" required></label>
+        <label>Senha (mínimo 8, com maiúscula, minúscula e número)<input class="input-texto" type="password" name="senha" autocomplete="new-password" required></label>
         <label>Confirme a senha<input class="input-texto" type="password" name="senha2" autocomplete="new-password" required></label>
         <p class="muted small" style="margin:0">Os treinos que já estão neste celular vão para a sua conta.</p>
         ${erro}<button class="btn" type="submit">Criar conta</button>

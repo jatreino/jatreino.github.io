@@ -18,6 +18,9 @@ const CORS = {
 const resposta = (corpo: unknown, status = 200) =>
   new Response(JSON.stringify(corpo), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
 const erro = (mensagem: string, status = 400) => resposta({ erro: mensagem }, status);
+// Os links dos e-mails só podem levar ao próprio app
+const URL_APP = 'https://jatreino.app.br/';
+const LIMITE_POR_HORA = 20; // convites por personal, contra uso do app para mandar e-mails em massa
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
@@ -40,7 +43,6 @@ Deno.serve(async (req) => {
   try { corpo = await req.json(); } catch { return erro('Dados inválidos.'); }
   const nome = String(corpo.nome || '').trim().slice(0, 120);
   const email = String(corpo.email || '').trim().toLowerCase();
-  const voltarPara = String(corpo.redirect_to || '');
   if (!nome) return erro('Informe o nome do aluno.');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return erro('E-mail inválido.');
   if (email === (quem.user.email || '').toLowerCase()) return erro('Você não pode convidar a si mesmo.');
@@ -54,6 +56,12 @@ Deno.serve(async (req) => {
     if (v) return erro('Esta pessoa já é sua aluna no app.', 409);
   }
 
+  // Limite de convites por hora
+  const umaHora = new Date(Date.now() - 3600_000).toISOString();
+  const { count } = await admin.from('convites').select('codigo', { count: 'exact', head: true })
+    .eq('professor_id', quem.user.id).gte('criado_em', umaHora);
+  if ((count || 0) >= LIMITE_POR_HORA) return erro('Muitos convites em pouco tempo. Tente de novo daqui a uma hora.', 429);
+
   // 4. Registra o convite (um por e-mail e personal: renova se já existir)
   await admin.from('convites').delete().eq('professor_id', quem.user.id).ilike('email', emailBusca).is('usado_por', null);
   const codigo = crypto.randomUUID().replace(/-/g, '').slice(0, 20);
@@ -64,7 +72,7 @@ Deno.serve(async (req) => {
   if (existente) return resposta({ ok: true, codigo, conta_existente: true });
   const { error: erroEmail } = await admin.auth.admin.inviteUserByEmail(email, {
     data: { nome, personal: eu.nome || 'Seu personal' },
-    ...(voltarPara.startsWith('https://') ? { redirectTo: voltarPara } : {}),
+    redirectTo: URL_APP,
   });
   if (erroEmail) {
     const m = erroEmail.message || '';

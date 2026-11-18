@@ -25,7 +25,7 @@ async function carregarUsuario(id, forcar = false) {
     sb.from('dados_app').select('conteudo, atualizado_em').eq('user_id', id).maybeSingle(),
     sb.from('vinculos').select('aluno_id').eq('professor_id', contaAtual.id).eq('aluno_id', id).maybeSingle(),
   ]);
-  const u = { id, perfil: perfil.data, vinculado: !!vinc.data, dados: dados.data?.conteudo || novoDb(), atualizado: dados.data?.atualizado_em, em: Date.now() };
+  const u = { id, perfil: perfil.data, vinculado: !!vinc.data, dados: dados.data?.conteudo ? Object.assign(novoDb(), sanearDados(dados.data.conteudo)) : novoDb(), atualizado: dados.data?.atualizado_em, em: Date.now() };
   if (u.perfil) nomesPerfis[id] = u.perfil.nome || u.perfil.email;
   prof.usuarios[id] = u;
   return u;
@@ -266,7 +266,7 @@ document.addEventListener('click', async (e) => {
   } else if (acao === 'prof-criar-convite') {
     const nome = $('#cv-nome').value.trim(), email = normEmail($('#cv-email').value);
     if (!nome) return toast('Informe o nome do aluno');
-    const codigo = uid() + uid().slice(-4);
+    const codigo = Array.from(crypto.getRandomValues(new Uint8Array(12)), (b) => b.toString(36).padStart(2, '0')).join('').slice(0, 20); // imprevisível
     const { error } = await sb.from('convites').insert({ codigo, professor_id: contaAtual.id, nome, email: email || null });
     if (error) return toast('Não foi possível criar o convite');
     await compartilharConvite(codigo, nome);

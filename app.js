@@ -22,7 +22,7 @@ function novoDb() {
 function carregar(contaId) {
   try {
     const raw = localStorage.getItem(chaveDados(contaId));
-    if (raw) return Object.assign(novoDb(), JSON.parse(raw));
+    if (raw) return Object.assign(novoDb(), sanearDados(JSON.parse(raw)));
   } catch (e) { /* dados ilegíveis: começa do zero */ }
   return novoDb();
 }
@@ -494,6 +494,7 @@ function videoExercicio(ex) {
 function abrirVideo(el) {
   if (!navigator.onLine) return toast('Sem internet: o vídeo precisa de conexão');
   const id = el.dataset.video;
+  if (!RE_VIDEO.test(id || '')) return; // seguranca.js
   const params = `autoplay=1&mute=1&loop=1&playlist=${id}&playsinline=1&rel=0&modestbranding=1`;
   el.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${id}?${params}" title="Vídeo de execução"
     allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
@@ -861,7 +862,7 @@ function cartaoPerfil() {
 }
 
 // Versão publicada (mostrada em Ajustes, para conferir se o celular já carregou a atualização)
-const VERSAO_APP = '2026.11.17u';
+const VERSAO_APP = '2026.11.17v';
 async function buscarAtualizacao() {
   toast('Buscando atualização...');
   try {
@@ -968,7 +969,7 @@ function importar(input) {
   const arq = input.files && input.files[0];
   if (!arq) return;
   arq.text().then((txt) => {
-    const dados = JSON.parse(txt);
+    const dados = sanearDados(JSON.parse(txt));
     if (!Array.isArray(dados.sessoes)) throw new Error('formato');
     if (!confirm(`Substituir os dados atuais por este backup (${dados.sessoes.length} treinos)?`)) return;
     db = Object.assign(novoDb(), {

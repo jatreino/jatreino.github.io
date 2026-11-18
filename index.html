@@ -15,14 +15,10 @@
   <link rel="icon" href="marca/app-icon-32.png" sizes="32x32" type="image/png">
   <link rel="preload" href="vendor/inter-5.3.0/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="manifest" href="manifest.webmanifest">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://i.ytimg.com; font-src 'self'; connect-src 'self' https://smywwtoxwvmgmfznevyj.supabase.co wss://smywwtoxwvmgmfznevyj.supabase.co; frame-src https://www.youtube-nocookie.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <link rel="stylesheet" href="styles.css">
-  <script>
-    // Tema antes da primeira pintura (sem piscar): claro (padrão do manual), escuro ou automático
-    (function () {
-      var t = 'claro'; try { t = localStorage.getItem('meutreino:tema') || 'claro'; } catch (e) {}
-      document.documentElement.dataset.tema = t;
-    })();
-  </script>
+  <script src="inicio.js"></script>
 </head>
 <body>
   <main id="app"></main>
@@ -38,6 +34,7 @@
   </nav>
   <div id="toast" class="toast" hidden></div>
   <script src="vendor/supabase-2.118.0.js"></script>
+  <script src="seguranca.js"></script>
   <script src="treinos.js"></script>
   <script src="exercicios.js"></script>
   <script src="catalogo.js"></script>

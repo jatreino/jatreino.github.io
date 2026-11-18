@@ -35,6 +35,9 @@ function gravarContas(contas) { localStorage.setItem(CONTAS_KEY, JSON.stringify(
 
 const normEmail = (s) => (s || '').normalize('NFKC').replace(/[​-‍﻿]/g, '').trim().toLowerCase();
 const emailValido = (s) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s);
+// Senha mínima: 8 caracteres com letras e números (vale para novas senhas; as antigas continuam entrando)
+const senhaFraca = (s) => s.length < 8 || !/[a-zA-ZÀ-ÿ]/.test(s) || !/\d/.test(s);
+const MSG_SENHA = 'A senha precisa ter pelo menos 8 caracteres, com letras e números.';
 function mascararEmail(e) {
   const [u, d] = (e || '').split('@');
   return d ? `${u.slice(0, 2)}***@${d}` : e || '';
@@ -124,6 +127,12 @@ async function sair() {
     await comLimite(sb.auth.signOut({ scope: 'local' }), 3000);
     try { for (const k of Object.keys(localStorage)) if (/^sb-.*-auth-token/.test(k)) localStorage.removeItem(k); } catch (e) { /* ok */ }
     localStorage.removeItem(USUARIO_KEY);
+    // Privacidade em aparelho compartilhado: apaga a cópia local dos treinos, se tudo já foi enviado ao servidor.
+    // (Se algo ficou pendente, por estar sem internet, a cópia fica para não perder dados; sobe no próximo login.)
+    const id = contaAtual.id;
+    if (!localStorage.getItem(pendenteKey(id))) {
+      for (const k of Object.keys(localStorage)) if (k.includes(id) && !k.startsWith('meutreino:migrado')) localStorage.removeItem(k);
+    }
   } catch (e) { /* segue saindo mesmo assim */ }
   localStorage.removeItem(SESSAO_KEY);
   contaAtual = null;
@@ -143,7 +152,7 @@ function traduzErro(error) {
   if (/already registered|already been registered/i.test(m)) return 'Já existe uma conta com esse e-mail. Use "Entrar" ou "Esqueci minha senha".';
   if (/Error sending|sending (recovery|confirmation|invite|magic link) email|smtp/i.test(m)) return 'Não foi possível enviar o e-mail agora. Tente de novo em alguns minutos; se continuar, fale com o suporte.';
   if (/rate limit|too many/i.test(m)) return 'Muitas tentativas ou e-mails seguidos. Aguarde alguns minutos e tente de novo.';
-  if (/Password should be|weak/i.test(m)) return 'Senha fraca: use pelo menos 6 caracteres.';
+  if (/Password should be|weak|pwned|leaked/i.test(m)) return 'Senha fraca ou já vazada em outros sites: use pelo menos 8 caracteres, com letras e números, e evite senhas comuns.';
   if (/fetch|network|Failed to/i.test(m)) return 'Sem conexão com o servidor. Verifique a internet.';
   return m || 'Não foi possível concluir. Tente de novo.';
 }
@@ -172,7 +181,7 @@ function telaLogin() {
   if (modoLogin === 'nova-senha') {
     return `<div class="login">${botaoTemaLogin()}${topo}
       <form class="card form" data-form="nova-senha">
-        <label>${boasVindas ? 'Senha' : 'Nova senha'} (mínimo 6 caracteres)<input class="input-texto" type="password" name="senha" autocomplete="new-password" required></label>
+        <label>${boasVindas ? 'Senha' : 'Nova senha'} (mínimo 8, com letras e números)<input class="input-texto" type="password" name="senha" autocomplete="new-password" required></label>
         <label>Confirme a ${boasVindas ? '' : 'nova '}senha<input class="input-texto" type="password" name="senha2" autocomplete="new-password" required></label>
         ${erro}<button class="btn" type="submit">Salvar e entrar</button>
       </form></div>`;
@@ -190,7 +199,7 @@ function telaLogin() {
       <form class="card form" data-form="criar">
         <label>Seu nome<input class="input-texto" name="nome" autocomplete="name" required></label>
         <label>E-mail<input class="input-texto" type="email" name="email" autocomplete="email" autocapitalize="none" required></label>
-        <label>Senha (mínimo 6 caracteres)<input class="input-texto" type="password" name="senha" autocomplete="new-password" required></label>
+        <label>Senha (mínimo 8, com letras e números)<input class="input-texto" type="password" name="senha" autocomplete="new-password" required></label>
         <label>Confirme a senha<input class="input-texto" type="password" name="senha2" autocomplete="new-password" required></label>
         <p class="muted small" style="margin:0">Os treinos que já estão neste celular vão para a sua conta.</p>
         ${erro}<button class="btn" type="submit">Criar conta</button>
@@ -242,7 +251,7 @@ async function enviarCriacao(form) {
   const nome = form.nome.value.trim(), email = normEmail(form.email.value), senha = form.senha.value;
   if (!nome) return erroLogin('Informe seu nome.');
   if (!emailValido(email)) return erroLogin('Informe um e-mail válido.');
-  if (senha.length < 6) return erroLogin('A senha precisa ter pelo menos 6 caracteres.');
+  if (senhaFraca(senha)) return erroLogin(MSG_SENHA);
   if (senha !== form.senha2.value) return erroLogin('As senhas não conferem.');
   const pronto = ocupado(form, 'Criando...');
   const { data, error } = await sb.auth.signUp({ email, password: senha, options: { data: { nome }, emailRedirectTo: URL_APP } });
@@ -291,7 +300,7 @@ async function confirmarLinkEmail(botao) {
 
 async function enviarNovaSenha(form) {
   const senha = form.senha.value;
-  if (senha.length < 6) return erroLogin('A senha precisa ter pelo menos 6 caracteres.');
+  if (senhaFraca(senha)) return erroLogin(MSG_SENHA);
   if (senha !== form.senha2.value) return erroLogin('As senhas não conferem.');
   const pronto = ocupado(form, 'Salvando...');
   const { data, error } = await sb.auth.updateUser({ password: senha });
@@ -325,7 +334,7 @@ function cartaoConta() {
 }
 
 async function trocarSenha(form) {
-  if (form.senha.value.length < 6) return toast('A senha precisa ter pelo menos 6 caracteres');
+  if (senhaFraca(form.senha.value)) return toast(MSG_SENHA);
   if (form.senha.value !== form.senha2.value) return toast('As senhas não conferem');
   const { error } = await sb.auth.updateUser({ password: form.senha.value });
   if (error) return toast(traduzErro(error));

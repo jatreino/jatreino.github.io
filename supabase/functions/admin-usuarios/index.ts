@@ -16,6 +16,7 @@ const CORS = {
 const resposta = (corpo: unknown, status = 200) =>
   new Response(JSON.stringify(corpo), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
 const erro = (mensagem: string, status = 400) => resposta({ erro: mensagem }, status);
+const URL_APP = 'https://jatreino.app.br/'; // os links dos e-mails só podem levar ao próprio app
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
@@ -42,7 +43,6 @@ Deno.serve(async (req) => {
   const email = String(corpo.email || '').trim().toLowerCase();
   const papel = String(corpo.papel || 'aluno');
   const professorId = corpo.professor_id ? String(corpo.professor_id) : null;
-  const voltarPara = String(corpo.redirect_to || '');
   if (!nome) return erro('Informe o nome.');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return erro('E-mail inválido.');
   if (!['aluno', 'professor'].includes(papel)) return erro('Papel inválido.');
@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
   // 4. Cria a conta e envia o e-mail de convite (o link leva ao app para a pessoa criar a senha)
   const { data: convite, error: erroConvite } = await admin.auth.admin.inviteUserByEmail(email, {
     data: { nome },
-    ...(voltarPara.startsWith('https://') ? { redirectTo: voltarPara } : {}),
+    redirectTo: URL_APP,
   });
   if (erroConvite) {
     const m = erroConvite.message || '';

@@ -58,7 +58,7 @@ async function atualizarAvisosSociais() {
     sb.from('vinculos').select('professor_id').eq('aluno_id', eu),
   ]);
   social.naoLidas = msgs.count || 0;
-  social.prescricoes = presc.data || [];
+  social.prescricoes = (presc.data || []).map((p) => ({ ...p, programa: sanearDados(p.programa) }));
   social.professores = (vinc.data || []).map((v) => v.professor_id);
   // Convites de personal enviados para o meu e-mail (supabase-convites-email.sql); sem a função, fica vazio
   try { const r = await sb.rpc('meus_convites'); social.convites = r.error ? [] : r.data || []; } catch (e) { social.convites = []; }
@@ -109,7 +109,7 @@ async function aplicarPrescricao(id) {
   const pr = social.prescricoes.find((x) => x.id === id);
   if (!pr) return;
   if (db.ativa) return toast('Finalize ou descarte o treino em andamento antes de trocar de programa');
-  const p = structuredClone(pr.programa);
+  const p = sanearDados(structuredClone(pr.programa));
   p.origem = p.origem === 'padrao' ? 'padrao' : 'professor';
   p.autor = nomeDe(pr.professor_id);
   delete p.paraAluno;

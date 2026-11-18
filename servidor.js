@@ -111,7 +111,7 @@ async function sincronizarAoAbrir() {
     return;
   }
   const pendente = !!localStorage.getItem(pendenteKey(id));
-  const servidor = data && data.conteudo;
+  const servidor = data && sanearDados(data.conteudo);
   let enviar = false;
   if (servidor && !(pendente && (db.atualizadoEm || 0) > (servidor.atualizadoEm || 0))) {
     db = Object.assign(novoDb(), servidor); // o servidor tem a versão mais nova

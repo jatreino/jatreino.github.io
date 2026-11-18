@@ -15,7 +15,7 @@ async function carregarAdmin() {
   adm.perfis = perfis.data || [];
   adm.vinculos = vinculos.data || [];
   adm.dados = {};
-  for (const d of dados.data || []) adm.dados[d.user_id] = d;
+  for (const d of dados.data || []) adm.dados[d.user_id] = { ...d, conteudo: sanearDados(d.conteudo) };
   for (const p of adm.perfis) nomesPerfis[p.user_id] = p.nome || p.email;
   adm.carregando = false;
   render();

@@ -1,0 +1,11 @@
+# Já treinô? — o app em si não tem conteúdo público para indexar; as páginas institucionais podem.
+User-agent: *
+Allow: /$
+Allow: /privacidade.html
+Allow: /suporte.html
+Allow: /excluir-conta.html
+Disallow: /supabase/
+Disallow: /vendor/
+Disallow: /*.sql$
+Disallow: /*.js$
+Disallow: /*.mjs$

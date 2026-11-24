@@ -94,6 +94,19 @@ const EXERCICIOS_EXTRA = [
   ['x-polichinelo', 'Corpo inteiro', 'Polichinelo', 'Peso corporal', 'corporal', [20, 40], 'Corpo inteiro · condicionamento', 'Salte abrindo pernas e braços e volte. Sem impacto: abra uma perna de cada vez.'],
   ['x-agachamento-salto', 'Corpo inteiro', 'Agachamento com salto', 'Peso corporal', 'corporal', [8, 15], 'Corpo inteiro · condicionamento', 'Agache e salte; aterrisse suave, com joelhos alinhados aos pés.'],
   ['x-caminhada-fazendeiro', 'Corpo inteiro', 'Caminhada do fazendeiro', 'Halteres', 'halter', [20, 40], 'Corpo inteiro · carregamento', 'Halteres pesados ao lado do corpo; caminhe ereto, ombros para trás. Reps = passos.'],
+  // ---------- Vindos de fichas reais (importação de PDF) ----------
+  ['x-pallof-polia', 'Abdômen', 'Pallof press na polia', 'Polia', 'total', [10, 12], 'Abdômen · anti-rotação', 'De lado para a polia, empurre a alça à frente sem deixar o tronco girar.', { lado: 'por lado', video: '91zJZhRx2u0' }],
+  ['x-prancha-frontal', 'Abdômen', 'Prancha frontal nos antebraços', 'Peso corporal', 'corporal', [20, 40], 'Abdômen · anti-extensão', 'Costelas alinhadas à pelve; respire e encerre antes de perder a posição.', { unidade: 's', video: 'jh0z3gbljUM' }],
+  ['x-prancha-lateral', 'Abdômen', 'Prancha lateral com pernas estendidas', 'Peso corporal', 'corporal', [20, 30], 'Abdômen · estabilidade lateral', 'Corpo alinhado da cabeça aos pés, quadril alto; respire.', { unidade: 's', lado: 'por lado' }],
+  ['x-prancha-lateral-joelhos', 'Abdômen', 'Prancha lateral com joelhos apoiados', 'Peso corporal', 'corporal', [20, 30], 'Abdômen · estabilidade lateral', 'Joelhos dobrados e apoiados; quadril alto, sem girar o tronco.', { unidade: 's', lado: 'por lado', video: 'gnSzKBEoPGo' }],
+  ['x-dead-bug', 'Abdômen', 'Dead bug alternado', 'Peso corporal', 'corporal', [6, 10], 'Abdômen · anti-extensão', 'Estenda braço e perna opostos sem tirar a lombar do chão.', { lado: 'por lado', video: 'pxql0kTdmEs' }],
+  ['x-abdominal-reverso', 'Abdômen', 'Abdominal reverso no solo', 'Peso corporal', 'corporal', [10, 15], 'Abdômen · elevação de pernas', 'Leve os joelhos em direção ao peito enrolando o quadril, sem impulso.', { video: 'XY8KzdDcMFg' }],
+  ['x-rollout-bola', 'Abdômen', 'Deslizamento dos antebraços na bola suíça', 'Peso corporal', 'corporal', [8, 12], 'Abdômen · anti-extensão', 'Antebraços na bola, role à frente só até onde a lombar não arquear.'],
+  ['x-carregamento-unilateral', 'Abdômen', 'Caminhada com halter unilateral (suitcase)', 'Halteres', 'halter', [20, 30], 'Abdômen · estabilidade lateral', 'Halter pesado em uma mão; caminhe sem inclinar o tronco.', { unidade: 'm', lado: 'por lado', video: 'uwSMrh8YMuw', vertical: true }],
+  ['x-aducao-polia', 'Glúteos', 'Adução de quadril em pé na polia baixa', 'Polia', 'total', [12, 15], 'Glúteos · adução', 'Tornozeleira na polia baixa; traga a perna para dentro cruzando à frente, sem inclinar o tronco.', { lado: 'por lado' }],
+  ['x-aducao-deitado', 'Glúteos', 'Adução de quadril deitado de lado', 'Peso corporal', 'corporal', [12, 15], 'Glúteos · adução', 'Deitado de lado, eleve a perna de baixo com controle (caneleira opcional).', { lado: 'por lado', video: '2DZL1Sq3YTA' }],
+  ['x-flexora-unilateral', 'Posteriores', 'Cadeira flexora unilateral', 'Máquina', 'total', [10, 12], 'Posteriores · flexão de joelho', 'Uma perna de cada vez; flexione o joelho sem tirar o quadril do assento.', { lado: 'por perna', video: 'hnMFbolM3GY' }],
+  ['x-terra-romeno-smith', 'Posteriores', 'Levantamento terra romeno no Smith', 'Smith', 'total', [8, 10], 'Posteriores · terra romeno / stiff', 'Leve o quadril para trás com a barra próxima às pernas e a coluna neutra.', { video: 'bFmE7Z9mSQs' }],
 ].map(([id, grupo, nome, equip, carga, reps, padrao, dica, extra]) => ({ id, grupo, nome, equip, carga, reps, padrao, dica, ...(extra || {}) }));
 
 // ---------- Complementares: aquecimento, core, mobilidade e alongamento ----------

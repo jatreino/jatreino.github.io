@@ -16,16 +16,36 @@ function tokens(s) {
 }
 // O que está entre parênteses no nome é opcional ("Crucifixo na máquina (peck deck)");
 // a primeira palavra (remada, supino, rosca...) é obrigatória para evitar falsos positivos em descrições.
-const TOKENS_CATALOGO = CATALOGO.map((c) => {
-  const t = tokens(c.nome.replace(/\(.*?\)/g, ' '));
+// Nomes alternativos comuns em fichas (o primeiro termo é a palavra principal)
+const APELIDOS = {
+  'a2-crossover-polia-alta': ['Crossover na polia alta'],
+  'x-woodchopper-polia': ['Wood chop na polia', 'Rotação diagonal na polia (wood chop)', 'Lenhador na polia'],
+  'a3-supino-horizontal-maquina': ['Supino reto na máquina'],
+  'a3-triceps-testa-ez': ['Tríceps testa com barra W'],
+  'a2-rosca-direta-barra': ['Rosca direta com barra W', 'Rosca direta com barra reta'],
+  'x-caminhada-fazendeiro': ['Farmer walk'],
+  'x-carregamento-unilateral': ['Caminhada com halter unilateral (suitcase)', 'Suitcase carry'],
+  'x-pallof-polia': ['Pallof press em pé na polia', 'Pallof press em meio-ajoelhado na polia'],
+};
+const TOKENS_CATALOGO = CATALOGO.flatMap((c) => [c.nome, ...(APELIDOS[c.id] || [])].map((nome) => {
+  const t = tokens(nome.replace(/\(.*?\)/g, ' '));
   return { c, t: new Set(t), cabeca: t[0] };
-});
+}));
 
 // Quanto do nome do exercício aparece no texto (0 a 1); exige a palavra principal e 2 palavras em comum.
 // Equipamento que falta no texto ("Puxada frontal" x "Puxada frontal na polia") pesa só metade.
 const EQUIP_PALAVRAS = new Set(['polia', 'maquina', 'halter', 'barra', 'smith', 'cabo', 'banco']);
+// Palavras que diferenciam exercícios parecidos: se o texto tem uma e o catálogo tem a outra, não é o mesmo exercício
+const CONFLITOS = [['flexora', 'extensora'], ['alta', 'baixa'], ['unilateral', 'bilateral'], ['supinada', 'pronada'],
+  ['inclinado', 'declinado'], ['inclinado', 'reto'], ['maquina', 'barra'], ['maquina', 'halter'], ['barra', 'halter'],
+  ['smith', 'barra'], ['smith', 'halter'], ['polia', 'halter'], ['polia', 'barra'], ['sentada', 'pe'], ['frente', 'atra'],
+  ['romeno', 'convencional'], ['horizontal', '45']];
+function conflita(textoTokens, item) {
+  return CONFLITOS.some(([a, b]) => (textoTokens.has(a) && item.t.has(b) && !item.t.has(a)) || (textoTokens.has(b) && item.t.has(a) && !item.t.has(b)));
+}
 function pontuar(textoTokens, item) {
   if (!textoTokens.has(item.cabeca)) return 0;
+  if (conflita(textoTokens, item)) return 0;
   let comuns = 0, faltaEquip = 0;
   for (const t of item.t) {
     if (textoTokens.has(t)) comuns++;
@@ -37,11 +57,13 @@ function pontuar(textoTokens, item) {
 function melhoresParecidos(texto, n = 5) {
   const tk = new Set(tokens(texto));
   return TOKENS_CATALOGO.map((it) => ({ c: it.c, s: pontuar(tk, it), n: it.t.size, cabeca: it.cabeca })).filter((x) => x.s > 0)
-    .sort((a, b) => b.s - a.s || b.n - a.n).slice(0, n); // empate: o nome mais específico
+    .sort((a, b) => b.s - a.s || b.n - a.n)
+    .filter((x, i, l) => l.findIndex((y) => y.c.id === x.c.id) === i) // um exercício aparece uma vez, mesmo com apelidos
+    .slice(0, n); // empate: o nome mais específico
 }
 const LIMIAR = 0.6;
 // Linhas que são só rótulo de grupo ("PANTURRILHAS", "PEITO") não são exercício nem se emendam com a seguinte
-const ROTULOS = new Set([...GRUPOS.flatMap((g) => tokens(g)), 'terra', 'quadricep']);
+const ROTULOS = new Set([...GRUPOS.flatMap((g) => tokens(g)), 'terra', 'quadricep', 'adutor', 'abdutor', 'ombro', 'posterior', 'core', 'antebraco', 'trapezio', 'gluteo']);
 
 // ---------- Leitura do PDF ----------
 async function textoDoPdf(arquivo) {
@@ -78,50 +100,110 @@ const RE_SERIES = /(\d{1,2})\s*(?:séries|series|voltas)\b/i;
 const RE_FAIXA = /(?:^|[^\d])(\d{1,2})\s*[-–]\s*(\d{1,2})(?!\s*(?:s\b|seg|min|kg|°|\d))/i;
 const RE_DESCANSO = /(\d{2,3})\s*(?:[-–]\s*(\d{2,3}))?\s*(?:s|seg|segundos)\b/i;
 // Seções que não são musculação: o leitor pula até a próxima parte, bloco ou ficha
-const RE_SECAO_FORA = /^(core|mobilidade|cardio|prepara[cç][aã]o|aquecimento|alongamento|carga e progress|registro|refer[eê]ncias|observa)/i;
-const RE_RETOMA = /^(parte\s+\d|exerc[ií]cio\s+por\s+s[eé]rie)/i;
+const RE_SECAO_FORA = /^(core(?!\s*:)|mobilidade|cardio|prepara[cç][aã]o|aquecimento|alongamento|carga e progress|registro da|refer[eê]ncias|observa)/i;
+// Cabeçalho de colunas de tabela ("Nº", "EXERCÍCIO / EXECUÇÃO", "SÉRIES x REPS", "DESCANSO", "REGISTRO"): só pula a linha
+const RE_CABECALHO = /^(n[ºo°.]?|exerc[ií]cios?(\s*\/\s*execu[cç][aã]o)?|s[eé]ries(\s*x\s*reps)?|reps|descanso|registro|carga|dose sugerida|como executar)$/i;
+// Seção de mobilidade/aquecimento da ficha: os itens numerados ("1. Gato-camelo") viram a preparação da ficha
+const RE_SECAO_PREP = /^(mobilidade e prepara|prepara[cç][aã]o|aquecimento)/i;
+const RE_RETOMA = /^(parte\s+\d|exerc[ií]cio\s+por\s+s[eé]rie|muscula[cç][aã]o)/i;
 
 function interpretar(texto) {
   const linhas = texto.split('\n').map((l) => l.trim()).filter(Boolean);
   const fichas = [];
   let ficha = null, bloco = null;
-  const novaFicha = (id, titulo) => { ficha = { id, titulo, blocos: [] }; fichas.push(ficha); bloco = null; };
+  const novaFicha = (id, titulo) => { ficha = { id, titulo, blocos: [], prep: [], mob: [] }; fichas.push(ficha); bloco = null; };
+  // Tabela "EXERCÍCIO / DOSE SUGERIDA / COMO EXECUTAR" (fichas de mobilidade e alongamento):
+  // nome (1-2 linhas) -> dose (começa com número; pode quebrar) -> descrição (termina com ponto)
+  const dose = { ativo: false, estado: 'nome', nome: [], item: null };
+  const fecharItem = () => { if (dose.item && ficha) ficha.mob.push(dose.item); dose.item = null; dose.nome = []; dose.estado = 'nome'; };
   const novoBloco = (nome) => { if (!ficha) novaFicha('A', 'Treino A'); bloco = { nome, descanso: null, exercicios: [] }; ficha.blocos.push(bloco); };
   let ultimo = null; // último exercício reconhecido: recebe os números das linhas seguintes
   let fora = false;  // dentro de uma seção que não é musculação (core, mobilidade, cardio...)
+  let prep = false;  // dentro da mobilidade/preparação da ficha
+  let proximoEhNome = false; // tabela "nº / GRUPO / nome": a linha seguinte ao rótulo é o nome do exercício
+  let modoTabela = false;    // a ficha usa essa tabela numerada
 
   for (let i = 0; i < linhas.length; i++) {
     const l = linhas[i];
     const mFicha = l.match(RE_FICHA);
     if (mFicha && l.length < 80) {
       const id = mFicha[1].toUpperCase();
-      if (!fichas.some((f) => f.id === id)) novaFicha(id, l.replace(/\s*[·|-].*$/, '').trim() || `Treino ${id}`);
+      if (!fichas.some((f) => f.id === id)) {
+        novaFicha(id, l.replace(/\s*[·|-].*$/, '').trim() || `Treino ${id}`);
+        // "TREINO A1 | EMPURRAR" -> tipo "Empurrar" (a não ser que seja "continuação")
+        const sub = (l.split(/\s[|·–-]\s/)[1] || '').trim();
+        if (sub && !/continua|segunda|ter[cç]a|quarta|quinta|sexta|s[aá]bado|domingo/i.test(sub)) ficha.subtitulo = sub.charAt(0) + sub.slice(1).toLowerCase();
+      }
       else ficha = fichas.find((f) => f.id === id); // cabeçalho repetido em outra página
-      ultimo = null; fora = false;
+      ultimo = null; fora = false; prep = false;
+      fecharItem(); dose.ativo = false;
+      continue;
+    }
+    if (/^dose sugerida$/i.test(l)) { dose.ativo = true; fecharItem(); continue; }
+    if (dose.ativo) {
+      if (/\s\|\s/.test(l) || /^\d+\s*\/\s*\d+$/.test(l) || RE_RETOMA.test(l) || RE_CABECALHO.test(l)) continue; // rodapé, cabeçalho, "PARTE 2 DE 4"
+      if (dose.estado === 'nome') {
+        if (/^\d/.test(l) && dose.nome.length) { dose.item = { nome: dose.nome.join(' '), dose: l, dica: '' }; dose.estado = 'dose'; }
+        else if (/[.]$/.test(l)) dose.nome = []; // parágrafo de orientação, não é exercício
+        else dose.nome.push(l);
+      } else if (dose.estado === 'dose') {
+        if (l.length < 25 && !/[.;]/.test(l) && (/^[a-zà-ÿ\d]/.test(l))) dose.item.dose += ` ${l}`; // "por lado", "lentas", "2 s"
+        else { dose.item.dica = l; if (/[.]$/.test(l)) fecharItem(); else dose.estado = 'dica'; }
+      } else { dose.item.dica += ` ${l}`; if (/[.]$/.test(l)) fecharItem(); }
       continue;
     }
     const mBloco = l.match(RE_BLOCO);
     if (mBloco) { novoBloco(`Bloco ${mBloco[1]}`); bloco.detectado = true; ultimo = null; fora = false; }
-    if (RE_RETOMA.test(l)) { fora = false; ultimo = null; continue; }
-    if (RE_SECAO_FORA.test(l)) { fora = true; ultimo = null; }
-    if (fora) continue;
+    if (RE_RETOMA.test(l)) { fora = false; prep = false; ultimo = null; continue; }
+    if (RE_CABECALHO.test(l)) continue;
+    if (RE_SECAO_PREP.test(l) && ficha) { fora = true; prep = true; ultimo = null; continue; }
+    if (!prep && RE_SECAO_FORA.test(l)) { fora = true; ultimo = null; }
+    if (fora) {
+      if (prep && ficha) { // "1. Gato-camelo em quatro apoios" e, na linha seguinte, "1 x 8 lentas"
+        const item = l.match(/^\d\.\s+(.{3,80})$/);
+        if (item) ficha.prep.push({ nome: item[1].trim(), dose: '' });
+        else if (ficha.prep.length && !ficha.prep[ficha.prep.length - 1].dose && /^\d+(\s*-\s*\d+)?\s*x\s*\S/i.test(l)) ficha.prep[ficha.prep.length - 1].dose = l.replace(/^\d+\s*x\s*/i, (m) => m.replace(/\s+/g, ' '));
+      }
+      continue;
+    }
+    // Tabela numerada: "7" / "TRÍCEPS" / "Tríceps na corda" -> o nome vem logo depois do rótulo
+    if (/^\d{1,2}$/.test(l) && linhas[i + 1] && /^[A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇ :\/\-]{2,40}$/.test(linhas[i + 1])) { proximoEhNome = true; modoTabela = true; i++; continue; }
+    if (/\s\|\s/.test(l)) continue; // subtítulo ("Terça-feira | Terra com barra, puxada...") não é exercício
+    // Em ficha de tabela numerada, o nome só aparece logo depois do nº e do grupo: o resto é descrição ou número
+    if (modoTabela && !proximoEhNome) { if (ultimo) lerNumeros(l, ultimo, bloco); continue; }
+    if (/^core\s*:/i.test(l)) { proximoEhNome = true; continue; }
     const tl = tokens(l);
     if (tl.length && tl.every((t) => ROTULOS.has(t)) && !/\d/.test(l)) continue;
 
+    // Tabela numerada: nome quebrado em duas linhas ("…com pegada" / "supinada") vira um nome só
+    if (proximoEhNome && linhas[i + 1] && /^[a-zà-ÿ]/.test(linhas[i + 1]) && linhas[i + 1].length < 30 && !/[.;]/.test(linhas[i + 1])) {
+      linhas[i] = `${l} ${linhas[i + 1]}`; linhas.splice(i + 1, 1); i--; continue;
+    }
     // Exercício: a linha sozinha ou emendada com a seguinte (nomes quebrados em duas linhas)
     // (não emenda se a linha já traz séries × repetições, nem se o nome não começa nesta linha)
     const sozinha = melhoresParecidos(l, 1)[0];
-    const podeEmendar = i + 1 < linhas.length && !RE_SERIES_REPS.test(l);
+    const podeEmendar = !proximoEhNome && i + 1 < linhas.length && !RE_SERIES_REPS.test(l); // na tabela o nome já veio inteiro
     const emendada = podeEmendar ? melhoresParecidos(`${l} ${linhas[i + 1]}`, 1)[0] : null;
-    let achado = sozinha && sozinha.s >= LIMIAR ? sozinha : null;
+    // Na tabela o nome vem inteiro e limpo: só troca por um do catálogo quando é quase o mesmo exercício
+    const limiar = proximoEhNome ? 0.8 : LIMIAR;
+    let achado = sozinha && sozinha.s >= limiar ? sozinha : null;
     let usouProxima = false;
     if (emendada && emendada.s >= LIMIAR && new Set(tokens(l)).has(emendada.cabeca) && (!achado || emendada.s > achado.s + 0.15)) { achado = emendada; usouProxima = true; }
     if (achado) {
+      proximoEhNome = false;
       if (!bloco) novoBloco(`Bloco ${(ficha?.blocos.length || 0) + 1}`);
       ultimo = { catId: achado.c.id, original: usouProxima ? `${l} ${linhas[i + 1]}` : l, series: null, reps: null };
       bloco.exercicios.push(ultimo);
       lerNumeros(usouProxima ? `${l} ${linhas[i + 1]}` : l, ultimo, bloco);
       if (usouProxima) i++;
+      continue;
+    }
+    // Nome vindo da tabela numerada, mas fora do catálogo: exercício personalizado com o nome do PDF
+    if (proximoEhNome && /[a-zà-ÿ]{3}/i.test(l) && !RE_SERIES_REPS.test(l)) {
+      proximoEhNome = false;
+      if (!bloco) novoBloco(`Bloco ${(ficha?.blocos.length || 0) + 1}`);
+      ultimo = { catId: null, nomeLivre: l.replace(/^[\d.)\-•·\s]+/, '').trim(), original: l, series: null, reps: null };
+      bloco.exercicios.push(ultimo);
       continue;
     }
     // Linha com "3x12" mas nome fora do catálogo: exercício personalizado
@@ -136,25 +218,42 @@ function interpretar(texto) {
     if (ultimo) lerNumeros(l, ultimo, bloco);
     else if (bloco) { lerDescanso(l, bloco); const s = l.match(RE_SERIES); if (s) bloco.voltas = +s[1]; }
   }
+  fecharItem();
   for (const f of fichas) f.blocos = f.blocos.filter((b) => b.exercicios.length);
-  return fichas.filter((f) => f.blocos.length);
+  // Dias da semana ("Segunda A1 Empurrar", "Domingo C Mobilidade")
+  const DIAS = { segunda: 'seg', terca: 'ter', quarta: 'qua', quinta: 'qui', sexta: 'sex', sabado: 'sab', domingo: 'dom' };
+  linhas.forEach((l, k) => {
+    // na mesma linha ("Segunda A1 Empurrar") ou em linhas seguidas ("Segunda" / "A1"), como sai das tabelas
+    const junto = /^(segunda|terca|quarta|quinta|sexta|sabado|domingo)(?:-feira)?$/.test(normal(l)) && linhas[k + 1] ? `${l} ${linhas[k + 1]}` : l;
+    const m = normal(junto).match(/^(segunda|terca|quarta|quinta|sexta|sabado|domingo)(?:-feira)?\s+([a-z]\d{0,2})\b/);
+    const f = m && fichas.find((x) => x.id === m[2].toUpperCase());
+    if (f) { f.dias ??= []; if (!f.dias.includes(DIAS[m[1]])) f.dias.push(DIAS[m[1]]); }
+  });
+  return fichas.filter((f) => f.blocos.length || f.mob.length);
 }
 // Descanso: só em linhas que falam de descanso/intervalo ou com faixa (ex.: "90-120 s")
-function lerDescanso(l, bloco) {
+function lerDescanso(l, bloco, ex) {
   if (RE_SERIES_REPS.test(l)) return; // "3x30s" é tempo de exercício, não descanso
   const d = l.match(RE_DESCANSO);
+  if (d && ex && !ex.descanso && +d[1] >= 20 && (d[2] || /descans|interval/i.test(l) || /^\d{2,3}\s*(?:[-–]\s*\d{2,3})?\s*s$/i.test(l.trim()))) ex.descanso = [+d[1], +(d[2] || d[1])];
   if (!d || bloco.descanso || +d[1] < 20) return;
   if (d[2] || /descans|interval|entre\s+s[eé]ries|ap[oó]s/i.test(l)) bloco.descanso = [+d[1], +(d[2] || d[1])];
 }
 function lerNumeros(l, ex, bloco) {
   const sr = l.match(RE_SERIES_REPS);
-  if (sr && !ex.reps) { ex.series = +sr[1]; ex.reps = [+sr[2], +(sr[3] || sr[2])]; }
+  if (sr && !ex.reps) {
+    ex.series = +sr[1]; ex.reps = [+sr[2], +(sr[3] || sr[2])];
+    const resto = l.slice(sr.index + sr[0].length);
+    if (/^\s*(s|seg|segundos)\b/i.test(resto)) ex.unidade = 's';
+    else if (/^\s*m\b/i.test(resto)) ex.unidade = 'm';
+    if (/por\s+(lado|perna|bra)/i.test(resto)) ex.lado = 'por lado';
+  }
   const s = l.match(RE_SERIES);
   if (s && /voltas|por exerc/i.test(l)) bloco.voltas = +s[1]; // "2 voltas" vale para o bloco todo
   else if (s && !ex.series) ex.series = +s[1];
   const f = l.match(RE_FAIXA);
   if (f && !ex.reps && +f[1] <= +f[2] && +f[2] <= 30) ex.reps = [+f[1], +f[2]];
-  lerDescanso(l, bloco);
+  lerDescanso(l, bloco, ex);
 }
 
 // ---------- Telas ----------
@@ -177,6 +276,12 @@ function telaImportar() {
     <p class="muted small">Confira cada exercício: troque pelo nome certo do catálogo, ajuste séries e repetições ou remova o que não for exercício.</p>`;
   imp.fichas.forEach((f, fi) => {
     h += `<div class="card"><label class="form">Ficha ${esc(f.id)}<input class="input-texto" data-imp-ficha="${fi}" value="${esc(f.titulo)}"></label>`;
+    if (f.dias?.length) h += `<p class="small muted" style="margin:6px 0 0">Dias: ${f.dias.map((d) => ({ seg: 'seg', ter: 'ter', qua: 'qua', qui: 'qui', sex: 'sex', sab: 'sáb', dom: 'dom' }[d])).join(', ')}</p>`;
+    if (f.prep?.length) h += `<p class="small muted" style="margin:6px 0 0">Preparação: ${f.prep.map((p) => esc(p.nome)).join(' · ')}</p>`;
+    if (f.mob?.length) {
+      total += f.mob.length;
+      h += `<h3>Mobilidade e alongamento (${f.mob.length})</h3>${f.mob.map((m) => `<div class="small" style="padding:5px 0;border-top:1px solid var(--line)"><b>${esc(m.nome)}</b> <span class="muted">· ${esc(m.dose)}</span></div>`).join('')}`;
+    }
     f.blocos.forEach((b, bi) => {
       h += `<h3>${esc(b.nome)}${b.descanso ? ` · descanso ${b.descanso[0]}-${b.descanso[1]} s` : ''}</h3>`;
       b.exercicios.forEach((ex, ei) => {
@@ -223,8 +328,9 @@ function iniciarRevisao(texto) {
     return render();
   }
   Object.assign(importacao, { etapa: 'revisao', fichas, erro: '', nome: importacao.nome || 'Treino importado' });
-  if (/voltas?|circuito/i.test(texto)) importacao.modalidade = 'circuito';
-  else if (/séries tradicionais|series tradicionais/i.test(texto)) importacao.modalidade = 'tradicional';
+  // Séries tradicionais têm prioridade: fichas costumam citar "circuito" justamente para dizer que não é
+  if (/s[eé]ries tradicionais|conclua (todas )?as (\S+ )?s[eé]ries|antes de avan[cç]ar|n[aã]o repita .{0,40}circuito/i.test(texto)) importacao.modalidade = 'tradicional';
+  else if (/\bvoltas?\b|circuito/i.test(texto)) importacao.modalidade = 'circuito';
   window.scrollTo(0, 0); render();
 }
 
@@ -240,31 +346,58 @@ function criarProgramaImportado() {
   const fichas = {}, ordem = [];
   imp.fichas.forEach((f, k) => {
     let id = f.id; while (fichas[id]) id += '2';
+    if (!f.blocos.length && f.mob?.length) { // ficha só de mobilidade e alongamento
+      fichas[id] = { titulo: f.titulo, tipo: f.subtitulo || 'Mobilidade e alongamento', tipoCurto: 'Mobilidade', resumo: `${f.mob.length} exercícios de mobilidade e alongamento`,
+        instrucoes: 'Movimentos lentos e controlados, sem dor. Siga a dose sugerida de cada exercício.', cardioInicial: null, cardioFinal: null,
+        preparacao: [], avisos: [], core: [], progressao: 'Aumente aos poucos a amplitude ou o tempo, sempre sem dor.', dias: [...(f.dias || [])], blocos: [],
+        mobilidade: f.mob.map((m, j) => ({ id: `${id.toLowerCase()}-mob-${j}`, nome: m.nome, series: 1, dose: m.dose, dica: m.dica })) };
+      ordem.push(id);
+      return;
+    }
     const blocos = [];
     for (const b of f.blocos) {
       const exs = b.exercicios.map((ex) => {
         const c = ex.catId && catalogoPorId(ex.catId);
         const reps = ex.reps || c?.reps || [10, 12];
-        return c ? { ...paraFicha(c), reps } : { id: `${id.toLowerCase()}-${uid()}`, nome: ex.nomeLivre || ex.original.slice(0, 60), grupo: '', carga: 'total', reps, dica: '' };
+        const base = c ? { ...paraFicha(c), reps } : { id: `${id.toLowerCase()}-${uid()}`, nome: ex.nomeLivre || ex.original.slice(0, 60), grupo: '', carga: ex.unidade ? 'corporal' : 'total', reps, dica: '' };
+        if (ex.unidade) base.unidade = ex.unidade;
+        if (ex.lado && !base.lado) base.lado = ex.lado;
+        return base;
       });
       if (!exs.length) continue;
       const voltas = Math.max(...b.exercicios.map((ex) => ex.series || b.voltas || 3));
       const grupos = [...new Set(exs.map((e) => e.grupo).filter(Boolean))];
       // Sem blocos no texto: agrupa de 2 em 2, como o gerador
-      const partes = !b.detectado ? Array.from({ length: Math.ceil(exs.length / 2) }, (_, i) => exs.slice(i * 2, i * 2 + 2)) : [exs];
+      // Descanso próprio de cada exercício (tabelas): agrupa os vizinhos com o mesmo descanso, cada grupo com o seu
+      const descansos = b.exercicios.map((ex) => ex.descanso || b.descanso || [60, 90]);
+      const porDescanso = imp.modalidade === 'tradicional' && b.exercicios.some((ex) => ex.descanso);
+      let partes;
+      if (porDescanso) {
+        partes = [];
+        exs.forEach((e, i) => {
+          const ultima = partes[partes.length - 1];
+          if (ultima && String(ultima.descanso) === String(descansos[i])) ultima.exs.push(e);
+          else partes.push({ exs: [e], descanso: descansos[i] });
+        });
+      } else {
+        partes = (!b.detectado ? Array.from({ length: Math.ceil(exs.length / 2) }, (_, i) => exs.slice(i * 2, i * 2 + 2)) : [exs])
+          .map((p) => ({ exs: p, descanso: b.descanso || [60, 90] }));
+      }
       for (const parte of partes) {
-        blocos.push({ nome: `Bloco ${blocos.length + 1}`, foco: [...new Set(parte.map((e) => e.grupo).filter(Boolean))].join(' / ') || grupos.join(' / '),
-          voltas, descanso: b.descanso || [60, 90], ...(imp.modalidade === 'tradicional' ? { modo: 'series' } : {}), exercicios: parte });
+        blocos.push({ nome: `Bloco ${blocos.length + 1}`, foco: [...new Set(parte.exs.map((e) => e.grupo).filter(Boolean))].join(' / ') || grupos.join(' / '),
+          voltas, descanso: parte.descanso, ...(imp.modalidade === 'tradicional' ? { modo: 'series' } : {}), exercicios: parte.exs });
       }
     }
     const todos = blocos.flatMap((b) => b.exercicios);
     const inf = todos.filter((e) => ['Quadríceps', 'Posteriores', 'Glúteos', 'Panturrilhas'].includes(e.grupo)).length > todos.length / 2;
     fichas[id] = {
-      titulo: f.titulo, tipo: inf ? 'Membros inferiores' : 'Membros superiores', tipoCurto: inf ? 'Inferiores' : 'Superiores', resumo: resumoDe(todos),
+      titulo: f.titulo, tipo: f.subtitulo || (inf ? 'Membros inferiores' : 'Membros superiores'), tipoCurto: f.subtitulo || (inf ? 'Inferiores' : 'Superiores'), resumo: resumoDe(todos),
       instrucoes: instrucoesDe({ modalidade: imp.modalidade }, blocos[0]?.voltas || 3), cardioInicial: null, cardioFinal: null,
-      preparacao: imp.complementos ? pegarRodando(inf ? pools.prepInf : pools.prepSup, 2, k) : [], avisos: [],
+      // Preparação que veio no próprio PDF tem prioridade sobre a escolhida pelo app
+      preparacao: f.prep?.length ? f.prep.map((p, j) => ({ id: `${id.toLowerCase()}-prep-${j}`, nome: p.nome, series: 1, dose: p.dose || '', dica: '' }))
+        : imp.complementos ? pegarRodando(inf ? pools.prepInf : pools.prepSup, 2, k) : [], avisos: [],
       core: imp.complementos ? pegarRodando(pools.core, 2, k) : [], mobilidade: imp.complementos ? pegarRodando(inf ? pools.mobInf : pools.mobSup, 2, k) : [],
-      progressao: PROGRESSAO, blocos,
+      progressao: PROGRESSAO, blocos, dias: [...(f.dias || [])],
     };
     ordem.push(id);
   });

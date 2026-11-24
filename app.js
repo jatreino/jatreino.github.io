@@ -204,7 +204,9 @@ function statusProgressao(ex, series) {
 
 const ROTULO_SUBIR = { assist: '↓ Reduzir assistência', corporal: '↑ Progredir', elastico: '↑ Elástico mais forte' };
 const rotuloSubir = (ex) => ROTULO_SUBIR[ex.carga] || '↑ Subir carga';
-const faixaReps = (ex) => `${ex.reps[0]}-${ex.reps[1]} ${ex.lado ? 'reps ' + ex.lado : 'reps'}`;
+// Unidade da "repetição": reps (padrão), segundos (isométricos, ex.: prancha) ou metros (carregamentos)
+const unidadeReps = (ex) => ({ s: 's', m: 'm' }[ex.unidade] || 'reps');
+const faixaReps = (ex) => `${ex.reps[0]}-${ex.reps[1]} ${unidadeReps(ex)}${ex.lado ? ' ' + ex.lado : ''}`;
 
 function fmtCarga(ex, v) {
   if (ex.carga === 'elastico') return esc(v || '–');
@@ -212,7 +214,7 @@ function fmtCarga(ex, v) {
 }
 function resumoSeries(series, ex) {
   return series.filter((x) => x.ok)
-    .map((x) => (SEM_CARGA(ex) ? `${x.reps} reps` : `${fmtCarga(ex, x.kg)}×${x.reps}`)).join(' · ');
+    .map((x) => (SEM_CARGA(ex) ? `${x.reps} ${unidadeReps(ex)}` : `${fmtCarga(ex, x.kg)}×${x.reps}${ex.unidade ? ' ' + unidadeReps(ex) : ''}`)).join(' · ');
 }
 // Valor usado nos gráficos: maior carga, ou maior nº de reps para exercícios sem carga.
 // Elástico não tem gráfico (a carga é uma cor/nível).
@@ -603,7 +605,7 @@ function telaTreino() {
         h += `<div class="serie ${s.ok ? 'feita' : ''} ${SEM_CARGA(ex) ? 'sem-carga' : ''}" data-ex="${ex.id}" data-i="${i}">
           <span class="n">S${i + 1}</span>
           ${campoCarga}
-          <label class="campo"><input inputmode="numeric" data-campo="reps" value="${esc(s.reps)}" placeholder="${ex.reps[0]}-${ex.reps[1]}"><em>reps</em></label>
+          <label class="campo"><input inputmode="numeric" data-campo="reps" value="${esc(s.reps)}" placeholder="${ex.reps[0]}-${ex.reps[1]}"><em>${unidadeReps(ex)}</em></label>
           <button class="ok-btn" data-acao="serie" aria-label="Concluir série">✓</button></div>`;
       });
       h += `</div>`;
@@ -744,11 +746,11 @@ function resumoAtual(ex, pts) {
     const kg = ult.series.filter((x) => x.ok).map((x) => x.kg).pop();
     return { atual: `Elástico: ${esc(kg || '–')}`, ganho: '' };
   }
-  const unid = SEM_CARGA(ex) ? 'reps' : UNIDADE[ex.carga];
+  const unid = SEM_CARGA(ex) ? unidadeReps(ex) : UNIDADE[ex.carga];
   const dif = ult.kg !== null && pts[0].kg !== null ? ult.kg - pts[0].kg : 0;
   return {
     atual: `${fmtKg(ult.kg)} ${unid}`,
-    ganho: dif ? ` · ${dif > 0 ? '+' : ''}${fmtKg(dif)} ${SEM_CARGA(ex) ? 'reps' : 'kg'}` : '',
+    ganho: dif ? ` · ${dif > 0 ? '+' : ''}${fmtKg(dif)} ${SEM_CARGA(ex) ? unidadeReps(ex) : 'kg'}` : '',
   };
 }
 
@@ -862,7 +864,7 @@ function cartaoPerfil() {
 }
 
 // Versão publicada (mostrada em Ajustes, para conferir se o celular já carregou a atualização)
-const VERSAO_APP = '2026.11.18b';
+const VERSAO_APP = '2026.11.23a';
 async function buscarAtualizacao() {
   toast('Buscando atualização...');
   try {
